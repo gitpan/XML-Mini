@@ -1,6 +1,21 @@
-Revision history for Perl extension MiniXML.
+Revision history for Perl extension XML::Mini
 
-1.2 Sun Sep 15 15:52:53 EDT 2002
-	- Perl implementation of MiniXML API finalised and 
-	Makefile.PL created
+XML-Mini-1.24, 2002.12.16
+-------------------------
+- Included Nigel Wetters (rivalsdm.com) changes/bug fixes to XML::Mini 
+  in order to make it more compatible with older Perl installs
+- Fixes to getElement (inability to fetch nested tags of same name)
+- Added the ability to removeChild() and removeAllChildren() for Element objects
+- Added the ability to prependChild() and insertChild(CHILD, INDEX)
+
+XML-Mini-1.24, 2002.11.25
+-------------------------
+- Made compatible with early Perls.
+- test added to check whether modules parse correctly
+- some rearrangement of PODs
+
+
+XML-Mini-1.2,  2002.09.15
+-------------------------
+- Perl implementation of MiniXML API finalised and Makefile.PL created
 

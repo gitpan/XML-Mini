@@ -1,43 +1,20 @@
 package XML::Mini;
-
-require 5.005;
 use strict;
-use warnings;
+$^W = 1;
 
-require Exporter;
-use AutoLoader qw(AUTOLOAD);
+use vars qw (
+	     $AutoEscapeEntities
+	     $AutoSetParent
+	     $AvoidLoops
+	     $CaseSensitive
+	     $Debug
+	     $IgnoreWhitespaces
+	     $NoWhiteSpaces
 
-our @ISA = qw(Exporter);
+	     $VERSION
+	     );
 
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
-# This allows declaration	use XML::Mini ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-	
-);
-our $VERSION = '1.2.3';
-
-use vars qw{
-		$AutoEscapeEntities
-		$AutoSetParent
-		$AvoidLoops
-		$CaseSensitive
-		$Debug
-		$IgnoreWhitespaces
-		$NoWhiteSpaces
-	};
-
-use strict;
+$VERSION = '1.24';
 
 $AvoidLoops = 0;
 $AutoEscapeEntities = 1;
@@ -45,47 +22,40 @@ $Debug = 0;
 $IgnoreWhitespaces = 1;
 $CaseSensitive = 0;
 $AutoSetParent = 0;
-
 $NoWhiteSpaces = -999;
 
-sub Log {
-	my $class = shift;
-	
-	print STDERR "XML::Mini LOG MESSAGE:" ;
-	print STDERR join(" ", @_) . "\n";
-	
+sub Log
+{
+    my $class = shift;
+    
+    print STDERR "XML::Mini LOG MESSAGE:" ;
+    print STDERR join(" ", @_) . "\n";
 }
 
-sub Error {
-	my $class = shift;
-	
-	print STDERR "XML::Mini Error MESSAGE:" ;
-	print STDERR join(" ", @_) . "\n";
-	
-	exit(254);
-	
+sub Error
+{
+    my $class = shift;
+    
+    print STDERR "XML::Mini Error MESSAGE:" ;
+    print STDERR join(" ", @_) . "\n";
+    
+    exit(254);
 }
 
-
-
-sub escapeEntities {
-	my $class = shift;
-	my $toencode = shift ;
-	
-	return undef unless (defined $toencode);
-
-	$toencode=~s/&/&amp;/g;
-	$toencode=~s/\"/&quot;/g;
-	$toencode=~s/>/&gt;/g;
-	$toencode=~s/</&lt;/g;
-	$toencode=~s/([\xA0-\xFF])/"&#".ord($1).";"/ge;
-	return $toencode;
+sub escapeEntities
+{
+    my $class = shift;
+    my $toencode = shift;
+    
+    return undef unless (defined $toencode);
+    
+    $toencode=~s/&/&amp;/g;
+    $toencode=~s/\"/&quot;/g;
+    $toencode=~s/>/&gt;/g;
+    $toencode=~s/</&lt;/g;
+    $toencode=~s/([\xA0-\xFF])/"&#".ord($1).";"/ge;
+    return $toencode;
 }
-
-
-
-
-
 
 1;
 __END__

@@ -1,8 +1,15 @@
 use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
+use strict;
+$^W = 1;
+
+my $PACKAGE = 'XML::Mini';
+(my $PACKAGE_FILE = $PACKAGE) =~ s|::|/|g;
+
 WriteMakefile(
-    'NAME'		=> 'XML::Mini',
-    'VERSION_FROM'	=> 'Mini.pm', # finds $VERSION
-    'PREREQ_PM'		=> {}, # e.g., Module::Name => 1.1
-);
+	      NAME            => $PACKAGE,
+	      VERSION_FROM    => "lib/$PACKAGE_FILE.pm", # finds $VERSION
+	      PREREQ_PM       => {
+		  'FileHandle'   => 2.0,
+		  'Data::Dumper' => 2.1
+	      }
+	      );

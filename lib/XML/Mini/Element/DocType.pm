@@ -1,21 +1,74 @@
 package XML::Mini::Element::DocType;
-
+use strict;
+$^W = 1;
 
 use XML::Mini;
 use XML::Mini::Element;
+use vars qw ( $VERSION @ISA );
 
-use strict;
-use vars qw{
-			
-			$VERSION
-};
-			
+$VERSION = '1.24';
+push @ISA, qw ( XML::Mini::Element );
 
-$VERSION = '1.2.3';
+sub new
+{
+    my $class = shift;
+    my $attr = shift;
+    my $self = {};
+    bless $self, ref $class || $class;
+    $self->{'_attributes'} = {};
+    $self->{'_numChildren'} = 0;
+    $self->{'_numElementChildren'} = 0;
+    $self->{'_children'} = [];
+    $self->{'_avoidLoops'} = $XML::Mini::AvoidLoops;
+    $self->{'_attr'} = $attr;
+    $self->name('DOCTYPE');
+    return $self;
+}
+
+sub toString
+{
+    my $self = shift;
+    my $depth = shift;
+    
+    my $spaces;
+    if ($depth == $XML::Mini::NoWhiteSpaces)
+    {
+	$spaces = '';
+    } else {
+	$spaces = $self->_spaceStr($depth);
+    }
+    
+    my $retString = "$spaces<!DOCTYPE " . $self->{'_attr'} . " [\n";
+    
+    if (! $self->{'_numChildren'})
+    {
+	$retString .= "]>\n";
+	return $retString;
+    }
+    
+    my $nextDepth = ($depth == $XML::Mini::NoWhiteSpaces) ? $XML::Mini::NoWhiteSpaces
+	: $depth + 1;
+    
+    for (my $i=0; $i < $self->{'_numChildren'}; $i++)
+    {
+	$retString .= $self->{'_children'}->[$i]->toString($nextDepth);
+    }
+
+    $retString .= "\n]>\n";
+    return $retString;
+}
 
 
-use base qw (XML::Mini::Element);
+sub toStringNoWhiteSpaces
+{
+    my $self = shift;
+    my $depth = shift;
+    return $self->toString($depth);
+}
 
+1;
+
+__END__
 
 =head1 NAME
 
@@ -26,77 +79,6 @@ XML::Mini::Element::DocType
 The XML::Mini::Element::DocType is used internally to represent <!DOCTYPE bla bla [ ... ]>.
 
 You shouldn't need to use it directly, see XML::Mini::Element's docType() method.
-
-=cut
-
-
-
-
-sub new {
-	my $class = shift;
-	my $attr = shift;
-	 
-	my $self = {};
-	bless $self, ref $class || $class;
-	
-	$self->{'_attributes'} = {};
-	$self->{'_numChildren'} = 0;
-	$self->{'_numElementChildren'} = 0;
-	$self->{'_children'} = [];
-	$self->{'_avoidLoops'} = $XML::Mini::AvoidLoops;
-	
-	$self->{'_attr'} = $attr;
-	
-	$self->name('DOCTYPE');
-	
-	return $self;
-}
-
-sub toString {
-	my $self = shift;
-	my $depth = shift;
-	
-	my $spaces;
-	if ($depth == $XML::Mini::NoWhiteSpaces)
-	{
-		$spaces = '';
-	} else {
-		$spaces = $self->_spaceStr($depth);
-	}
-	
-	my $retString = "$spaces<!DOCTYPE " . $self->{'_attr'} . " [\n";
-	
-	if (! $self->{'_numChildren'})
-	{
-		$retString .= "]>\n";
-		return $retString;
-	}
-	
-	my $nextDepth = ($depth == $XML::Mini::NoWhiteSpaces) ? $XML::Mini::NoWhiteSpaces
-									: $depth + 1;
-	
-	for (my $i=0; $i < $self->{'_numChildren'}; $i++)
-	{
-		
-		$retString .= $self->{'_children'}->[$i]->toString($nextDepth);
-		
-	}
-	
-	$retString .= "\n]>\n";
-	
-	return $retString;
-}
-
-
-sub toStringNoWhiteSpaces {
-	my $self = shift;
-	my $depth = shift;
-	
-	return $self->toString($depth);
-	
-}
-
-
 
 =head1 AUTHOR
 
@@ -133,8 +115,3 @@ XML::Mini, XML::Mini::Document, XML::Mini::Element
 http://minixml.psychogenic.com
 
 =cut
-
-
-
-
-1;

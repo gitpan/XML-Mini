@@ -2,7 +2,32 @@
 XML::Mini - Homepage and latest version:
 			http://minixml.psychogenic.com
 
-See the INSTALL file for details on installation.
+INSTALLATION:
+
+3 Methods are available:
+
+- CPAN
+	# perl -MCPAN -e 'install XML::Mini'
+
+- Local
+	perl Makefile.PL
+	make
+	make test
+	su ; make install
+
+- Simple (no need for root priv)
+
+   Since XML::Mini is a pure Perl implementation, you can simply
+   tar zxvf XML-Mini-XXX.tar.gz
+   mv lib/XML /path/to/destination
+
+   and then, in your code, use:
+
+   #!/usr/bin/perl
+   use lib '/path/to/destination';
+   use XML::Mini::Document;
+   
+   # ... create and parse XML!
 
 
 

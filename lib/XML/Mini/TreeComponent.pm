@@ -1,28 +1,89 @@
 package XML::Mini::TreeComponent;
-use Data::Dumper;
+use strict;
+$^W = 1;
 
+use Data::Dumper;
 use XML::Mini;
 
-use strict;
+use vars qw ( $VERSION );
+$VERSION = '1.24';
 
-use vars qw{
-			
-			$VERSION
-};
-			
+sub new
+{
+    my $class = shift;
+    my $self = {};
+    bless $self, ref $class || $class;
+    return $self;
+}
 
-$VERSION = '1.2.3';
+sub name
+{
+    my $self = shift;
+    my $setTo = shift; # optionally set
+    return undef;
+}
 
+sub getElement
+{
+    my $self = shift;
+    my $name = shift;
+    return undef;
+}
 
+sub getValue
+{
+    my $self = shift;
+    return undef;
+}
 
-#***************************************************************************************************
-#****************************************************************************************************
-#*****
-#*****					  XML::MiniTreeComponent
-#*****
-#****************************************************************************************************
-#***************************************************************************************************/
+sub parent
+{
+    my $self = shift;
+    my $newParent = shift; # optionally set
+    
+    if ($newParent)
+    {
+	my $ownType = ref $self;
+	my $type = ref $newParent;
+	if ($type && $type =~ /^$ownType/)
+	{
+	    $self->{'_parent'} = $newParent;
+	} else {
+	    return XML::Mini->Error("XML::MiniTreeComponent::parent(): Must pass an instance derived from "
+				    . "XML::MiniTreeComponent to set.");
+	}
+    }
+    return $self->{'_parent'};
+}
 
+sub toString
+{
+    my $self = shift;
+    my $depth = shift || 0;
+    return undef;
+}
+
+sub dump
+{
+    my $self = shift;
+    return Dumper($self);
+}
+
+sub _spaceStr
+{
+    my $self = shift;
+    my $numSpaces = shift;
+    my $retStr = '';
+    if ($numSpaces)
+    {
+	$retStr = ' ' x $numSpaces;
+    }
+    return $retStr;
+}
+
+1;
+
+__END__
 
 =head1 NAME
 
@@ -47,39 +108,6 @@ included in the parent() method.
 Warning: This class is not to be instatiated.
 Derive and override.
 
-=cut
-
-sub new {
-	my $class = shift;
-
-	my $self = {};
-	bless $self, ref $class || $class;
-
-	return $self;
-}
-
-
-
-sub name {
-	my $self = shift;
-	my $setTo = shift; # optionally set
-
-	return undef;
-}
-
-sub getElement {
-	my $self = shift;
-	my $name = shift;
-
-return undef;
-}
-
-sub getValue {
-	my $self = shift;
-
-	return undef;
-}
-
 =head2 parent [NEWPARENT]
 
 The parent() method is used to get/set the element's parent.
@@ -90,73 +118,15 @@ If the NEWPARENT parameter is passed, sets the parent to NEWPARENT
 Returns a reference to the parent XML::MiniTreeComponent if set, NULL otherwise.
 
 
-=cut
-
-sub parent {
-	my $self = shift;
-	my $newParent = shift; # optionally set
-
-	if ($newParent)
-	{
-		my $ownType = ref $self;
-		my $type = ref $newParent;
-		if ($type && $type =~ /^$ownType/)
-		{
-			$self->{'_parent'} = $newParent;
-		} else {
-		return XML::Mini->Error("XML::MiniTreeComponent::parent(): Must pass an instance derived from "
-				. "XML::MiniTreeComponent to set.");
-		}
-	}
-
-	return $self->{'_parent'};
-}
-
-
 =head2 toString [DEPTH]
 
 Return a stringified version of the XML representing
 this component and all sub-components
 
-=cut
-
-sub toString {
-	my $self = shift;
-	my $depth = shift || 0;
-
-	return undef;
-}
-
-
 =head2 dump
 
 Debugging aid, dump returns a nicely formatted dump of the current structure of the
 XML::Mini::TreeComponent-derived object.
-
-
-=cut
-
-sub dump {
-	my $self = shift;
-
-	return Dumper($self);
-}
-
-sub _spaceStr {
-	my $self = shift;
-	my $numSpaces = shift;
-
-	my $retStr = '';
-
-	if ($numSpaces)
-	{
-		$retStr = ' ' x $numSpaces;
-	}
-
-	return $retStr;
-}
-
-
 
 =head1 AUTHOR
 
@@ -193,10 +163,4 @@ XML::Mini, XML::Mini::Document, XML::Mini::Element
 http://minixml.psychogenic.com
 
 =cut
-
-
-
-
-
-1;
 
