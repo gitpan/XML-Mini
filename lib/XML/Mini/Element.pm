@@ -11,7 +11,7 @@ use XML::Mini::Element::CData;
 
 use vars qw ( $VERSION @ISA );
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.26';
+$VERSION = '1.27';
 
 sub new
 {
@@ -234,6 +234,7 @@ sub getValue {
 sub getElement {
 	my $self = shift;
 	my $name = shift;
+	my $elementNumber = shift || 1;
 	
 	return XML::Mini->Error("Element::getElement() Must Pass Element name.")
 		unless defined ($name);
@@ -260,6 +261,7 @@ sub getElement {
 	
 	return undef unless $self->{'_numChildren'};
 	
+	my $foundCount = 0;
 	#* Try each child (immediate children take priority) *
 	for (my $i = 0; $i < $self->{'_numChildren'}; $i++)
 	{
@@ -268,11 +270,18 @@ sub getElement {
 		{
 		    if ($XML::Mini::CaseSensitive)
 		    {
-			return $self->{'_children'}->[$i]
-			    if ($name =~ m/^$childname$/);
+		    	if ($name =~ m/^$childname$/)
+			{
+				$foundCount++;
+				return $self->{'_children'}->[$i] if ($foundCount == $elementNumber);
+			}
 		    } else {
-			return $self->{'_children'}->[$i]
-			    if ($name =~ m/^$childname$/i);
+		    	if ($name =~ m/^$childname$/i)
+			{
+				$foundCount++;
+				return $self->{'_children'}->[$i] if ($foundCount == $elementNumber);
+			}
+			    
 		    }
 		    
 		} #/* end if child has a name */
@@ -282,14 +291,14 @@ sub getElement {
 	#/* Now, Use beautiful recursion, daniel san */
 	for (my $i = 0; $i < $self->{'_numChildren'}; $i++)
 	{
-		my $theelement = $self->{'_children'}->[$i]->getElement($name);
+		my $theelement = $self->{'_children'}->[$i]->getElement($name, $elementNumber);
 		if ($theelement)
 		{
-		    if ($XML::Mini::Debug)
-		    {
-			XML::Mini->Log("Element::getElement() returning element " . $theelement->name());
-		      }
-		    return $theelement;
+			
+			XML::Mini->Log("Element::getElement() returning element " . $theelement->name())
+				if ($XML::Mini::Debug);
+			
+			return $theelement;
 		}
 	}
 	
@@ -301,15 +310,18 @@ sub getElementByPath
 {
     my $self = shift;
     my $path = shift || return undef;
+    my @elementNumbers = @_;
+    
     my @names = split ("/", $path);
     my $element = $self;
+    my $position = 0;
     foreach my $elementName (@names)
     {
 	next unless ($elementName);
 	if ($element) #/* Make sure we didn't hit a dead end */
 	{
 	    #/* Ask this element to get the next child in path */
-	    $element = $element->getElement($elementName);
+	    $element = $element->getElement($elementName, $elementNumbers[$position++]);
 	}
     }
     return $element;
@@ -992,7 +1004,7 @@ child XML::MiniNodes (and all the XML::MiniNodes contained within
 it's child Elements, recursively).
 
 
-=head2 getElement NAME
+=head2 getElement NAME [POSITION]
 
 Searches the element and it's children for an element with name NAME.
 
@@ -1008,7 +1020,32 @@ NOTE: The search is performed like this, returning the first
   (each child will then proceed similarly, checking all it's immediate
   children in order and then asking them to getElement())
 
-=head2 getElementByPath PATH
+
+If a numeric POSITION parameter is passed, getElement() will return 
+the POSITIONth element of name NAME (starting at 1).  Thus, on document
+ 
+
+  <?xml version="1.0"?>
+  <people>
+   <person>
+    bob
+   </person>
+   <person>
+    jane
+   </person>
+   <person>
+    ralph
+   </person>
+  </people>
+
+$people->getElement('person') will return the element containing the text node
+'bob', while $people->getElement('person', 3) will return the element containing the 
+text 'ralph'.
+
+
+
+
+=head2 getElementByPath PATH [POSITIONSARRAY]
 
 
 Attempts to return a reference to the (first) element at PATH
@@ -1044,8 +1081,18 @@ and password = "mypassword").
 BUT be careful:
 	$accessid = $partRate->getElementByPath('partList/partNum');
 
-will return the partNum element with the value "DA42".  Other partNums are 
-inaccessible by getElementByPath() - Use Element::getAllChildren() instead.
+will return the partNum element with the value "DA42".   To access other partNum elements you
+must either use the POSITIONSARRAY or the getAllChildren() method on the partRateRequest element.
+
+POSITIONSARRAY functions like the POSITION parameter to getElement(), but instead of specifying the
+position of a single element, you must indicate the position of all elements in the path.  Therefore, to
+get the third part number element, you would use
+
+	my $thirdPart = $xmlDocument->getElementByPath('partRateRequest/partList/partNum', 1, 1, 3);
+	
+The additional 1,1,3 parameters indicate that you wish to retrieve the 1st partRateRequest element in 
+the document, the 1st partList child of partRateRequest and the 3rd partNum child of the partList element
+(in this instance, the partNum element that contains 'ss-839uent').
 
 Returns the Element reference if found, NULL otherwise.
 

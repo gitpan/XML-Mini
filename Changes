@@ -1,9 +1,15 @@
 Revision history for Perl extension XML::Mini
 
+XML-Mini-1.27, 2003.02.01
+-------------------------
+- Problem for users of Perl < 5.8.0 - The module was coded as if Text::Balanced was optional but was 'use'ing it and failing the make test.
+- Made some changes to the parameters for getElement() and getElementByPath(), adding optional positions in order to allow extraction of the nth matching element instead of only the 1st.
+
+
 XML-Mini-1.26, 2003.01.27
 -------------------------
 - Big bug found when using Text::Balanced (problem in parsing <tag>...</tag> whenever ... contains
-something like <unary /> tags or anything but <tag>..</tag>s and text).  Fixed and tests adjusted.
+something like <unary /> tags or anything but <tag>..</tag> and text).  Fixed and tests adjusted.
 
 XML-Mini-1.25, 2003.01.26
 -------------------------

@@ -3,7 +3,7 @@ use strict;
 $^W = 1;
 
 use FileHandle;
-use Text::Balanced qw(extract_tagged);
+
 use XML::Mini;
 use XML::Mini::Element;
 use XML::Mini::Element::Comment;
@@ -17,7 +17,7 @@ use vars qw ( 	$VERSION
 		$TextBalancedAvailable
 	 );
 	 
-eval "use Text::Balanced";
+eval "use Text::Balanced qw(extract_tagged)";
 if ($@)
 {
 	$TextBalancedAvailable = 0;
@@ -26,7 +26,7 @@ if ($@)
 }
 
 
-$VERSION = '1.26';
+$VERSION = '1.27';
 
 sub new
 {
@@ -122,8 +122,9 @@ sub getElementByPath
 {
     my $self = shift;
     my $path = shift;
+    my @elementNumbers = @_;
     
-    my $element = $self->{'_xmlDoc'}->getElementByPath($path);
+    my $element = $self->{'_xmlDoc'}->getElementByPath($path, @elementNumbers);
     if ($XML::Mini::Debug)
     {
 	if ($element)
@@ -141,17 +142,18 @@ sub getElement
 {
     my $self = shift;
     my $name = shift;
+    my $elementNumber = shift; # optionally get only the ith element
     
-    my $element = $self->{'_xmlDoc'}->getElement($name);
+    my $element = $self->{'_xmlDoc'}->getElement($name, $elementNumber);
     
     if ($XML::Mini::Debug)
     {
 	if ($element)
 	{
-	    XML::Mini->Log("XML::MiniDoc::getElement(): element named $name found.");
-	  } else {
-	      XML::Mini->Log("XML::MiniDoc::getElement(): element named $name NOT found.");
-	    }
+		XML::Mini->Log("XML::MiniDoc::getElement(): element named $name found.");
+	} else {
+		XML::Mini->Log("XML::MiniDoc::getElement(): element named $name NOT found.");
+	}
     }
     
     return $element;
@@ -710,7 +712,7 @@ If the optional VALUE (string or numeric) parameter is passed,
 the new element's text/numeric content will be set using VALUE.
 Returns a reference to the newly created element.
 
-=head2 getElement NAME
+=head2 getElement NAME [POSITON]
 
 Searches the document for an element with name NAME.
 
@@ -724,8 +726,32 @@ element that matches:
  - Ask each immediate child (in order) to XML::Mini::Element::getElement()
   (each child will then proceed similarly, checking all it's immediate
    children in order and then asking them to getElement())
+   
+If a numeric POSITION parameter is passed, getElement() will return only 
+the POSITIONth element of name NAME (starting at 1).  Thus, on document
+ 
 
-=head2 getElementByPath PATH
+  <?xml version="1.0"?>
+  <people>
+   <person>
+    bob
+   </person>
+   <person>
+    jane
+   </person>
+   <person>
+    ralph
+   </person>
+  </people>
+
+
+$people->getElement('person') will return the element containing the text node
+'bob', while $people->getElement('person', 3) will return the element containing the 
+text 'ralph'.
+
+
+
+=head2 getElementByPath PATH [POSITIONARRAY]
 
 Attempts to return a reference to the (first) element at PATH
 where PATH is the path in the structure from the root element to
@@ -759,8 +785,19 @@ BUT be careful:
 
 	my $accessid = $xmlDocument->getElementByPath('partRateRequest/partList/partNum');
 
-will return the partNum element with the value "DA42".  Other partNums are 
-inaccessible by getElementByPath() - Use XML::Mini::Element::getAllChildren() instead.
+will return the partNum element with the value "DA42".  To access other partNum elements you
+must either use the POSITIONSARRAY or the getAllChildren() method on the partRateRequest element.
+
+POSITIONSARRAY functions like the POSITION parameter to getElement(), but instead of specifying the
+position of a single element, you must indicate the position of all elements in the path.  Therefore, to
+get the third part number element, you would use
+
+	my $thirdPart = $xmlDocument->getElementByPath('partRateRequest/partList/partNum', 1, 1, 3);
+	
+The additional 1,1,3 parameters indicate that you wish to retrieve the 1st partRateRequest element in 
+the document, the 1st partList child of partRateRequest and the 3rd partNum child of the partList element
+(in this instance, the partNum element that contains 'ss-839uent').
+
 
 Returns the XML::Mini::Element reference if found, NULL otherwise.
 
