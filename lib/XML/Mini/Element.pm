@@ -11,7 +11,7 @@ use XML::Mini::Element::CData;
 
 use vars qw ( $VERSION @ISA );
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.27';
+$VERSION = '1.28';
 
 sub new
 {
@@ -344,6 +344,8 @@ sub getAllChildren
 {
     my $self = shift;
     my $name = shift; # optionally only children with this name
+    
+    
     my @returnChildren;
     for (my $i=0; $i < $self->{'_numChildren'}; $i++)
     {
@@ -664,6 +666,71 @@ sub avoidLoops
     }
     return $self->{'_avoidLoops'};
 }
+
+
+sub toStructure {
+	my $self = shift;
+	
+	
+	my $retHash = {};
+	my $contents = "";
+	my $numAdded = 0;
+	if ($self->{'_attributes'})
+	{
+		while (my ($attname, $attvalue) = each %{$self->{'_attributes'}})
+		{
+			$retHash->{$attname} = $attvalue;
+			$numAdded++;
+		}
+	}
+	
+	my $numChildren = $self->{'_numChildren'} || 0;
+	for (my $i=0; $i < $numChildren ; $i++)
+	{
+		my $thisChild = $self->{'_children'}->[$i];
+		if ($self->isElement($thisChild))
+		{
+			my $name = $thisChild->name();
+			my $struct = $thisChild->toStructure();
+			my $existing = $retHash->{$name};
+			
+			if ($existing)
+			{
+				my $existingType = ref $existing || "";
+				if ($existingType eq 'ARRAY')
+				{
+					push @{$existing}, $struct;
+				} else {
+					my $arrayRef = [$existing, $struct];
+					$retHash->{$name} = $arrayRef;
+				}
+			} else {
+				
+				$retHash->{$name} = $struct;
+			}
+			
+			
+			$numAdded++;
+			
+		} else {
+			$contents .= $thisChild->getValue();
+		}
+	}
+	
+	if ($numAdded)
+	{
+		if (length($contents))
+		{
+			$retHash->{'-content'} = $contents;
+		}
+		
+		return $retHash;
+	} else {
+		return $contents;
+	}
+
+}
+
 
 sub toString
 { 

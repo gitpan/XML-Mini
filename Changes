@@ -1,5 +1,19 @@
 Revision history for Perl extension XML::Mini
 
+XML-Mini-1.28, 2003.03.31
+-------------------------
+- New XML::Mini::Document methods, toHash() and fromHash(), allow for wickedly easy XML generation and manipulation.  
+See the XML::Mini::Document::fromHash() and XML::Mini::Document::toHash() pod for details.
+
+- Bug in the parsing algorithm when dealing with multiple elements of the same name, some of which have sub-elements, eg
+
+ <a />
+ <a />
+ <a> <b>...</b> </a>
+ <a />
+
+ Now fixed.
+
 XML-Mini-1.27, 2003.02.01
 -------------------------
 - Problem for users of Perl < 5.8.0 - The module was coded as if Text::Balanced was optional but was 'use'ing it and failing the make test.

@@ -1,5 +1,4 @@
 Changes
-LICENSE
 INSTALL
 lib/XML/Mini/Document.pm
 lib/XML/Mini/TreeComponent.pm
@@ -21,3 +20,6 @@ t/02parsexml.t
 t/03genxml.t
 t/04crossnested.t
 t/05parsefunc.t
+t/06getelem.t
+t/07ToFromHash.t
+LICENSE

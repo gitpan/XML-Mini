@@ -6,8 +6,12 @@
      root.rmd
     </message>
     <testtag />
+    <testtag />
     <testtag myattr="somevalue" />
     <testtag />
+    <testtag myattr="someothervalue">
+     There are lots of test tags here, it would seem...
+    </testtag>
     <testtag />
     <owner>
      root

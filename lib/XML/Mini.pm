@@ -14,7 +14,7 @@ use vars qw (
 	     $VERSION
 	     );
 
-$VERSION = '1.27';
+$VERSION = '1.28';
 
 $AvoidLoops = 0;
 $AutoEscapeEntities = 1;
@@ -68,10 +68,25 @@ XML::Mini - Perl implementation of the XML::Mini XML create/parse interface.
 
 	use XML::Mini::Document;
 	
+	use Data::Dumper;
+	
+	
+	###### PARSING XML #######
+	
+	# create a new object
 	my $xmlDoc = XML::Mini::Document->new();
 	
 	# init the doc from an XML string
 	$xmlDoc->parse($XMLString);
+	
+	# You may use the toHash() method to automatically
+	# convert the XML into a hash reference
+	my $xmlHash = $xmlDoc->toHash();
+	
+	print Dumper($xmlHash);
+	
+	
+	# You can also manipulate the elements like directly, like this:	
 	
 	# Fetch the ROOT element for the document
 	# (an instance of XML::Mini::Element)
@@ -87,8 +102,30 @@ XML::Mini - Perl implementation of the XML::Mini XML create/parse interface.
 	}
 	
 	
-	# Create a new document
+	###### CREATING XML #######
+	
+	# Create a new document from scratch
+	
 	my $newDoc = XML::Mini::Document->new();
+	
+	# This can be done easily by using a hash:
+	my $h = {	
+	 'spy'	=> {
+		'id'	=> '007',
+		'type'	=> 'SuperSpy',
+		'name'	=> 'James Bond',
+		'email'	=> 'mi5@london.uk',
+		'address'	=> 'Wherever he is needed most',
+		},
+	};
+
+	$newDoc->fromHash($h);
+ 
+	
+	
+	# Or new XML can also be created by manipulating 
+	#elements directly:
+	
 	my $newDocRoot = $newDoc->getRoot();
 	
 	# create the <? xml ?> header
@@ -186,7 +223,7 @@ from the authors.
 LICENSE
 
     XML::Mini module, part of the XML::Mini XML parser/generator package.
-    Copyright (C) 2002, 2003 Patrick Deegan
+    Copyright (C) 2002, 2003 Patrick Deegan, Psychogenic.com
     All rights reserved
     
     This program is free software; you can redistribute it and/or modify

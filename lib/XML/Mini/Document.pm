@@ -26,7 +26,7 @@ if ($@)
 }
 
 
-$VERSION = '1.27';
+$VERSION = '1.28';
 
 sub new
 {
@@ -65,7 +65,7 @@ sub setRoot
     my $self = shift;
     my $root = shift;
     
-    return XML::Mini->Error("XML::MiniDoc::setRoot(): Trying to set non-XML::Mini::Element as root")
+    return XML::Mini->Error("XML::Mini::Document::setRoot(): Trying to set non-XML::Mini::Element as root")
 	unless ($self->isElement($root));
     
     $self->{'_xmlDoc'} = $root;
@@ -129,9 +129,9 @@ sub getElementByPath
     {
 	if ($element)
 	{
-	    XML::Mini->Log("XML::MiniDoc::getElementByPath(): element at $path found.");
+	    XML::Mini->Log("XML::Mini::Document::getElementByPath(): element at $path found.");
 	  } else {
-	      XML::Mini->Log("XML::MiniDoc::getElement(): element at $path NOT found.");
+	      XML::Mini->Log("XML::Mini::Document::getElement(): element at $path NOT found.");
 	    }
     }
     
@@ -150,9 +150,9 @@ sub getElement
     {
 	if ($element)
 	{
-		XML::Mini->Log("XML::MiniDoc::getElement(): element named $name found.");
+		XML::Mini->Log("XML::Mini::Document::getElement(): element named $name found.");
 	} else {
-		XML::Mini->Log("XML::MiniDoc::getElement(): element named $name NOT found.");
+		XML::Mini->Log("XML::Mini::Document::getElement(): element named $name NOT found.");
 	}
     }
     
@@ -226,6 +226,186 @@ sub parse
 }
 
 
+sub fromHash {
+	my $self = shift;
+	my $href = shift ||  return XML::Mini->Error("XML::Mini::Document::fromHash - must pass a hash reference");
+	my $params = shift || {};
+	
+	$self->init();
+	
+	if ($params->{'attributes'})
+	{
+		my %attribs;
+		while (my ($attribName, $value) = each %{$params->{'attributes'}})
+		{
+			my $vType = ref $value || "";
+			if ($vType)
+			{
+				if ($vType eq 'ARRAY')
+				{
+					foreach my $v (@{$value})
+					{
+						$attribs{$attribName}->{$v}++;
+					}
+					
+				}
+			} else {
+				$attribs{$attribName}->{$value}++;
+			}
+		}
+		
+		$params->{'attributes'} = \%attribs;
+	}
+				
+		
+	
+	while (my ($keyname, $value) = each %{$href})
+	{
+	
+		my $sub = $self->_fromHash_getExtractSub(ref $value);
+			
+		$self->$sub($keyname, $value, $self->{'_xmlDoc'}, $params);
+		
+	}
+	
+	return $self->{'_xmlDoc'}->numChildren();
+	
+}
+
+sub _fromHash_getExtractSub {
+	my $self = shift;
+	my $valType = shift || 'STRING';
+	
+	my $sub = "_fromHash_extract$valType";
+		
+	return XML::Mini->Error("XML::Mini::Document::fromHash Don't know how to interpret '$valType' values")
+		unless ($self->can($sub));
+	
+	return $sub;
+	
+}
+	
+
+sub _fromHash_extractHASH {
+	my $self = shift;
+	my $name = shift;
+	my $value = shift || return XML::Mini->Error("XML::Mini::Document::extractHASHref No value passed!");
+	my $parent = shift || return XML::Mini->Error("XML::Mini::Document::extractHASHref No parent element passed!");
+	my $params = shift || {};
+	
+	return XML::Mini->Error("XML::Mini::Document::extractHASHref No element name passed!")
+		unless (defined $name);
+		
+	
+	my $thisElement = $parent->createChild($name);
+	
+	while (my ($key, $val) = each %{$value})
+	{
+		
+			
+		my $sub = $self->_fromHash_getExtractSub(ref $val);
+			
+		$self->$sub($key, $val, $thisElement, $params);
+		
+	}
+	
+	return ;
+}
+
+sub _fromHash_extractARRAY {
+	my $self = shift;
+	my $name = shift;
+	my $values = shift || return XML::Mini->Error("XML::Mini::Document::extractARRAYref No value passed!");
+	my $parent = shift || return XML::Mini->Error("XML::Mini::Document::extractARRAYref No parent element passed!");
+	my $params = shift || {};
+	
+	return XML::Mini->Error("XML::Mini::Document::extractARRAYref No element name passed!")
+		unless (defined $name);
+		
+	# every element in an array ref is a child element of the parent
+	foreach my $val (@{$values})
+	{
+		my $valRef = ref $val;
+		
+		if ($valRef)
+		{
+			# this is a complex element
+			#my $childElement = $parent->createChild($name);
+			
+			# process sub elements
+			my $sub = $self->_fromHash_getExtractSub($valRef);
+			
+			$self->$sub($name, $val, $parent, $params);
+			
+		} else {
+			# simple string
+			$self->_fromHash_extractSTRING($name, $val, $parent, $params);
+			
+			
+		}
+		
+	}
+	
+	return;
+
+}
+
+sub _fromHash_extractSTRING {
+	my $self = shift;
+	my $name = shift;
+	my $val = shift ;
+	my $parent = shift || return XML::Mini->Error("XML::Mini::Document::extractSTRING No parent element passed!");
+	my $params = shift || {};
+	
+	return XML::Mini->Error("XML::Mini::Document::extractSTRING No element name passed!")
+		unless (defined $name);
+	
+	
+	return XML::Mini->Error("XML::Mini::Document::extractSTRING No value passed!")
+		unless (defined $val);
+
+	my $pname = $parent->name();
+			
+	if ($params->{'attributes'}->{$pname}->{$name} || $params->{'attributes'}->{'-all'}->{$name})
+	{
+		$parent->attribute($name, $val);
+	} elsif ($name eq '-content') {
+	
+		$parent->text($val);
+		
+	} else {
+		$parent->createChild($name, $val);
+	}
+	
+	return ;
+	
+
+}
+
+
+
+sub toHash {
+	my $self = shift;
+	
+	my $retVal = $self->{'_xmlDoc'}->toStructure();
+	
+	my $type = ref $retVal;
+	
+	if ($type && $type eq 'HASH')
+	{
+		return $retVal;
+	}
+	
+	my $retHash = {
+			'-content'	=> $retVal,
+		};
+		
+	return $retHash;
+
+}
+	
+
+
 sub toString
 {
     my $self = shift;
@@ -297,11 +477,13 @@ sub fromSubStringBT {
 	} else {
 	
 		$XMLString =~ s/>\s*\n/>/gsm;
-		if ($XMLString =~ m/^\s*<\s*([^\s>]+)[^>]*>.*<\s*\/\1\s*>/osm)
+		if ($XMLString =~ m/^\s*<\s*([^\s>]+)([^>]*>).*<\s*\/\1\s*>/osm)
 		{
 			# starts with a normal <tag> ... </tag> but has some ?? in it
 			
-			return $self->fromSubStringBT($parentElement, $XMLString, 'USEIGNORE');
+			my $startTag = $2;
+			return $self->fromSubStringBT($parentElement, $XMLString, 'USEIGNORE')
+				unless ($startTag =~ m|/\s*>$|);
 		}
 	
 		# not a <tag>...</tag>
@@ -605,11 +787,27 @@ XML::Mini::Document - Perl implementation of the XML::Mini Document API.
 =head1 SYNOPSIS
 
 	use XML::Mini::Document;
+
 	
+	use Data::Dumper;
+	
+	
+	###### PARSING XML #######
+	
+	# create a new object
 	my $xmlDoc = XML::Mini::Document->new();
 	
 	# init the doc from an XML string
 	$xmlDoc->parse($XMLString);
+	
+	# You may use the toHash() method to automatically
+	# convert the XML into a hash reference
+	my $xmlHash = $xmlDoc->toHash();
+	
+	print Dumper($xmlHash);
+	
+	
+	# You can also manipulate the elements like directly, like this:	
 	
 	# Fetch the ROOT element for the document
 	# (an instance of XML::Mini::Element)
@@ -625,8 +823,30 @@ XML::Mini::Document - Perl implementation of the XML::Mini Document API.
 	}
 	
 	
-	# Create a new document
+	###### CREATING XML #######
+	
+	# Create a new document from scratch
+	
 	my $newDoc = XML::Mini::Document->new();
+	
+	# This can be done easily by using a hash:
+	my $h = {	
+	 'spy'	=> {
+		'id'	=> '007',
+		'type'	=> 'SuperSpy',
+		'name'	=> 'James Bond',
+		'email'	=> 'mi5@london.uk',
+		'address'	=> 'Wherever he is needed most',
+		},
+	};
+
+	$newDoc->fromHash($h);
+ 
+	
+	
+	# Or new XML can also be created by manipulating 
+	#elements directly:
+	
 	my $newDocRoot = $newDoc->getRoot();
 	
 	# create the <? xml ?> header
@@ -828,6 +1048,139 @@ In all cases where SOURCE is a file or file handle, XML::Mini takes care of slur
 contents and closing the handle.
 
 
+=head2 fromHash HASHREF [OPTIONS]
+
+Parses a "hash representation" of your XML structure.  For each key => value pair within the
+hash ref, XML::Mini will create an element of name 'key' :
+
+ 
+ 	- with the text contents set to 'value' if 'value' is a string
+	
+	- for each element of 'value' if value is an ARRAY REFERENCE
+	
+	- with suitable children for each subkey => subvalue if 'value' is a HASH REFERENCE.
+
+
+For instance, if fromHash() is passed a simple hash ref like:
+ 
+    
+    my $h = {
+	 
+	 'spy'	=> {
+		'id'	=> '007',
+		'type'	=> 'SuperSpy',
+		'name'	=> 'James Bond',
+		'email'	=> 'mi5@london.uk',
+		'address'	=> 'Wherever he is needed most',
+	},
+   };
+
+
+then :
+
+  $xmlDoc->fromHash($h);
+  print $xmlDoc->toString();
+  
+will output 
+
+ <spy>
+  <email> mi5@london.uk </email>
+  <name> James Bond </name>
+  <address> Wherever he is needed most </address>
+  <type> SuperSpy </type>
+  <id> 007 </id>
+ </spy>
+
+
+
+The optional OPTIONS parameter may be used to specify which keys to use as attributes (instead of 
+creating subelements).  For example, calling
+
+  	
+ my $options = { 
+  			'attributes'	=> {
+  					'spy'	=> 'id',
+					'email'	=> 'type',
+					'friend' => ['name', 'age'],
+				}
+		};
+
+
+ my $h = {
+	 
+	 'spy'	=> {
+		'id'	=> '007',
+		'type'	=> 'SuperSpy',
+		'name'	=> 'James Bond',
+		'email'	=> {
+				'type'		=> 'private',
+				'-content'	=> 'mi5@london.uk',
+				
+			},
+		'address' => {
+				'type'	=> 'residential',
+				'-content' => 'Wherever he is needed most',
+			},
+		
+		'friend' => [
+					{
+						'name' 	=> 'claudia',
+						'age'	=> 25,
+						'type'	=> 'close',
+					},
+					
+					{
+						'name'	=> 'monneypenny',
+						'age'	=> '40something',
+						'type'	=> 'tease',
+					},
+					
+					{
+						'name'	=> 'Q',
+						'age'	=> '10E4',
+						'type'	=> 'pain',
+					}
+				],
+									
+	},
+   };
+   
+	
+  $xmlDoc->fromHash($h, $options);
+  print $xmlDoc->toString();
+  
+will output something like:
+ 
+ <spy id="007">
+  <name> James Bond </name>
+  <email type="private"> mi5@london.uk </email>
+  <address>
+   <type> residential </type>
+   Wherever he is needed most
+  </address>
+  <type> SuperSpy </type>
+  <friend age="25" name="claudia">
+   <type> close </type>
+  </friend>
+  <friend age="40something" name="monneypenny">
+   <type> tease </type>
+  </friend>
+  <friend age="10E4" name="Q">
+   <type> pain </type>
+  </friend>
+ </spy>
+
+As demonstrated above, you can use the optional href to specify tags for which attributes (instead of elements) should be 
+created and you may nest hash and array refs to create complex structures.
+
+NOTE: Whenever a hash references is used you lose the sequence in which the elements are placed - only the array references (which create
+a list of identically named elements) can preserve their order.
+
+See ALSO: the documentation for the related toHash() method.
+
+Still TODO: Create some better docs for this!  For the moment you can take a peek within the test suite of the source distribution.
+
+
 =head2 fromString XMLSTRING
 
 Initialise the XML::Mini::Document (and it's root XML::Mini::Element) using the 
@@ -846,9 +1199,11 @@ has.
 
 
 
+
+
 =head2 toString [DEPTH]
 
-Converts this XML::MiniDoc object to a string and returns it.
+Converts this XML::Mini::Document object to a string and returns it.
 
 The optional DEPTH may be passed to set the space offset for the
 first element.
@@ -867,6 +1222,61 @@ If SAFE flag is passed and is a true value, toFile will do some extra checking, 
 if the filename matches m|/\.\./| or m|#;`\*| or if FILENAME points to a softlink.  In addition, if SAFE
 is 'NOOVERWRITE', toFile will fail if the FILENAME already exists.
 
+
+=head2 toHash 
+
+Transform the XML structure internally represented within the object 
+(created manually or parsed from a file or string) into a HASH reference and returns the href.
+ 
+For instance, if this XML is parse()d:
+ 
+<people>
+ 
+ <person id="007">                                   
+  <email> mi5@london.uk </email>
+  <name> James Bond </name>
+  <address> Wherever he is needed most </address>
+  <type> SuperSpy </type>
+ </person>
+ 
+ <person id="006" number="6">
+  <comment> I am not a man, I am a free number </comment>
+  <name> Number 6 </name>
+  <email type="private"> prisoner@aol.com </email>
+  <address> 6 Prison Island Road, Prison Island, Somewhere </address>
+ </person>
+
+</people>
+
+The hash reference returned will look like this (as output by Data::Dumper):
+ 
+
+ 'people' => {
+
+      'person' => [
+                    {
+                      'email' => 'mi5@london.uk',
+                      'name' => 'James Bond',
+                      'type' => 'SuperSpy',
+                      'address' => 'Wherever he is needed most',
+                      'id' => '007'
+                    },
+                    {
+                      'email' => {
+                                   'type' => 'private',
+                                   '-content' => 'prisoner@aol.com'
+                                 },
+                      'comment' => 'I am not a man, I am a free number',
+                      'number' => '6',
+                      'name' => 'Number 6',
+                      'address' => '6 Prison Island Road, Prison Island, Somewhere',
+                      'id' => '006'
+                    }
+                  ]
+    }
+        
+
+
 =head2 getValue
 
 Utility function, call the root XML::Mini::Element's getValue()
@@ -874,7 +1284,7 @@ Utility function, call the root XML::Mini::Element's getValue()
 =head2 dump
 
 Debugging aid, dump returns a nicely formatted dump of the current structure of the
-XML::MiniDoc object.
+XML::Mini::Document object.
 
 
 =head1 CAVEATS
