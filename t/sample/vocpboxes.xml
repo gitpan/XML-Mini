@@ -5,6 +5,10 @@
     <message>
      root.rmd
     </message>
+    <testtag />
+    <testtag myattr="somevalue" />
+    <testtag />
+    <testtag />
     <owner>
      root
     </owner>

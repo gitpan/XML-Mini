@@ -11,7 +11,7 @@ use XML::Mini::Element::CData;
 
 use vars qw ( $VERSION @ISA );
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.25';
+$VERSION = '1.26';
 
 sub new
 {
@@ -1105,6 +1105,26 @@ If INDEX is larger than numChildren(), the CHILDELEMENT will be added to the end
 the list (same as appendChild() ).
 
 Returns the inserted child element.
+
+=head2 removeChild CHILDELEMENT
+
+Removes the element CHILDELEMENT from the list of this element's children, if it is 
+found within this list.
+
+Returns the child element that was removed, else undef.
+
+=head2 removeAllChildren 
+
+Clears the element's list of child elements.  Returns an array ref of child elements 
+that were removed.
+
+
+=head2 remove
+
+Removes this element from it's parent's list of children.  The parent must be set for the 
+element for this method to work - this can be done manually using the parent() method or 
+automatically if  $XML::Mini::AutoSetParent is true (set to false by default).
+
 
 
 

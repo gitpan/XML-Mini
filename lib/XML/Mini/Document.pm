@@ -26,7 +26,7 @@ if ($@)
 }
 
 
-$VERSION = '1.25';
+$VERSION = '1.26';
 
 sub new
 {
@@ -242,13 +242,28 @@ sub fromSubStringBT {
 	my $self = shift;
 	my $parentElement = shift;
    	my $XMLString = shift;
+	my $useIgnore = shift;
 	
 	if ($XML::Mini::Debug) 
 	{
 		XML::Mini->Log("Called fromSubStringBT() with parent '" . $parentElement->name() . "'\n");
 	}
 	
-	my @res = Text::Balanced::extract_tagged($XMLString);
+	my @res;
+	if ($useIgnore)
+	{
+		my $ignore = [ '<\s*[^\s>]+[^>]*\/\s*>',	# <unary \/>
+			'<\?\s*[^\s>]+\s*[^>]*\?>', # <? headers ?>
+			'<!--.+?-->',			# <!-- comments -->
+			'<!\[CDATA\s*\[.*?\]\]\s*>\s*', 	# CDATA 
+			'<!DOCTYPE\s*([^\[]*)\[(.*?)\]\s*>',	# DOCTYPE
+			'<!ENTITY\s*[^>]+>'
+		];
+		
+		@res = Text::Balanced::extract_tagged($XMLString, undef, undef, undef, { 'ignore' => $ignore });
+	} else {
+		@res = Text::Balanced::extract_tagged($XMLString);
+	}
 	
 	if ($#res == 5)
 	{
@@ -278,6 +293,15 @@ sub fromSubStringBT {
 			XML::Mini->Log("XML::Mini::Document::fromSubStringBT extracted balanced text from invalid tag '$prefix' - ignoring");
     		}
 	} else {
+	
+		$XMLString =~ s/>\s*\n/>/gsm;
+		if ($XMLString =~ m/^\s*<\s*([^\s>]+)[^>]*>.*<\s*\/\1\s*>/osm)
+		{
+			# starts with a normal <tag> ... </tag> but has some ?? in it
+			
+			return $self->fromSubStringBT($parentElement, $XMLString, 'USEIGNORE');
+		}
+	
 		# not a <tag>...</tag>
 		#it's either a                             
 		if ($XMLString =~ m/^\s*(<\s*([^\s>]+)([^>]+)\/\s*>|	# <unary \/>
@@ -382,7 +406,7 @@ sub fromSubString
     
     while ($XMLString =~/\s*<\s*([^\s>]+)([^>]+)?>(.*?)<\s*\/\1\s*>\s*([^<]+)?(.*)|
     \s*<!--(.+?)-->\s*|
-    \s*<\s*([^\s>]+)([^>]+)\/\s*>\s*([^<>]+)?|
+    \s*<\s*([^\s>]+)\s*([^>]*)\/\s*>\s*([^<>]+)?|
     \s*<!\[CDATA\s*\[(.*?)\]\]\s*>\s*|
     \s*<!DOCTYPE\s*([^\[]*)\[(.*?)\]\s*>\s*|
     \s*<!ENTITY\s*([^"'>]+)\s*(["'])([^\14]+)\14\s*>\s*|
@@ -587,14 +611,58 @@ XML::Mini::Document - Perl implementation of the XML::Mini Document API.
 	
 	# Fetch the ROOT element for the document
 	# (an instance of XML::Mini::Element)
-	my $xmlElement = $xmlDoc->getRoot();
+	my $xmlRoot = $xmlDoc->getRoot();
 	
 	# play with the element and its children
 	# ...
+	my $topLevelChildren = $xmlRoot->getAllChildren();
+	
+	foreach my $childElement (@{$topLevelChildren})
+	{
+		# ...
+	}
+	
+	
+	# Create a new document
+	my $newDoc = XML::Mini::Document->new();
+	my $newDocRoot = $newDoc->getRoot();
+	
+	# create the <? xml ?> header
+	my $xmlHeader = $newDocRoot->header('xml');
+	# add the version 
+	$xmlHeader->attribute('version', '1.0');
+	
+	my $person = $newDocRoot->createChild('person');
+	
+	my $name = $person->createChild('name');
+	$name->createChild('first')->text('John');
+	$name->createChild('last')->text('Doe');
+	
+	my $eyes = $person->createChild('eyes');
+	$eyes->attribute('color', 'blue');
+	$eyes->attribute('number', 2);
 	
 	# output the document
-	print $xmlDoc->toString();
+	print $newDoc->toString();
 	
+	
+This example would output :
+
+ 
+
+ <?xml version="1.0"?>
+  <person>
+   <name>
+    <first>
+     John
+    </first>
+    <last>
+     Doe
+    </last>
+  </name>
+  <eyes color="blue" number="2" />
+  </person>
+
 
 =head1 DESCRIPTION
 
@@ -779,7 +847,7 @@ It is impossible to parse "cross-nested" tags using regular expressions (i.e. se
 by default with Perl 5.8), such sequences will be handled flawlessly.
 
 Even if you do not have the Text::Balanced module available, it is still possible to generate this type
-of XML.
+of XML - the problem only appears when parsing.
 
 =head1 AUTHOR
 

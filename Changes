@@ -1,5 +1,10 @@
 Revision history for Perl extension XML::Mini
 
+XML-Mini-1.26, 2003.01.27
+-------------------------
+- Big bug found when using Text::Balanced (problem in parsing <tag>...</tag> whenever ... contains
+something like <unary /> tags or anything but <tag>..</tag>s and text).  Fixed and tests adjusted.
+
 XML-Mini-1.25, 2003.01.26
 -------------------------
 - Major changes to the parsing algorithm which, if Text::Balanced is available, allow "cross-nested" tags
