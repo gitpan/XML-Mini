@@ -3,17 +3,30 @@ use strict;
 $^W = 1;
 
 use FileHandle;
+use Text::Balanced qw(extract_tagged);
 use XML::Mini;
 use XML::Mini::Element;
 use XML::Mini::Element::Comment;
+use XML::Mini::Element::Header;
 use XML::Mini::Element::CData;
 use XML::Mini::Element::DocType;
 use XML::Mini::Element::Entity;
 use XML::Mini::Node;
 
-use vars qw ( $VERSION );
+use vars qw ( 	$VERSION
+		$TextBalancedAvailable
+	 );
+	 
+eval "use Text::Balanced";
+if ($@)
+{
+	$TextBalancedAvailable = 0;
+} else {
+	$TextBalancedAvailable = 1;
+}
 
-$VERSION = '1.24';
+
+$VERSION = '1.25';
 
 sub new
 {
@@ -23,7 +36,7 @@ sub new
     my $self = {};
     bless $self, ref $class || $class;
     
-    $self->{'_xmlDoc'} = XML::Mini::Element->new("PSYCHOGENIC_ROOT_ELEMENT");
+    $self->init();
     
     if (defined $string)
     {
@@ -32,6 +45,14 @@ sub new
     
     return $self;
 }
+
+sub init {
+	my $self = shift;
+	delete $self->{'_xmlDoc'};
+	
+	$self->{'_xmlDoc'} = XML::Mini::Element->new("PSYCHOGENIC_ROOT_ELEMENT");
+}
+	
 
 sub getRoot
 {
@@ -151,24 +172,57 @@ sub fromFile
     my $self = shift;
     my $filename = shift;
     
-    return XML::Mini->Error("XML::Mini::Document::fromFile() Can't find file $filename")
-	unless (-e $filename);
-    
-    
-    return XML::Mini->Error("XML::Mini::Document::fromFile() Can't read file $filename")
-	unless (-r $filename);
-    
+    my $fRef = \$filename;
     my $contents;
-    my $infile = FileHandle->new();
-    $infile->open( "<$filename")
-	|| return  XML::Mini->Error("XML::Mini::Document::fromFile()  Could not open $filename for read: $!");
-    
-    $contents = join("", $infile->getlines());
+    if (ref($filename) && UNIVERSAL::isa($filename, 'IO::Handle'))
+    {
+	$contents = join("", $filename->getlines());
+	$filename->close();
 
-    $infile->close();
+    } elsif (ref $fRef eq 'GLOB') {
+    
+    	$contents = join('', $fRef->getlines());
+	$fRef->close();
+	
+    } elsif (ref $fRef eq 'SCALAR') {
+    
+	return XML::Mini->Error("XML::Mini::Document::fromFile() Can't find file $filename")
+		unless (-e $filename);
+    
+    
+	return XML::Mini->Error("XML::Mini::Document::fromFile() Can't read file $filename")
+		unless (-r $filename);
+	
+	my $infile = FileHandle->new();
+	$infile->open( "<$filename")
+		|| return  XML::Mini->Error("XML::Mini::Document::fromFile()  Could not open $filename for read: $!");
+	$contents = join("", $infile->getlines());
+	$infile->close();
+    }
     
     return $self->fromString($contents);
 }
+
+sub parse 
+{
+	my $self = shift;
+	my $input = shift;
+	
+	my $inRef = \$input;
+	my $type = ref($inRef);
+	
+	if ($type eq 'SCALAR' && $input =~ m|<[^>]+>|sm)
+	{
+		# we have some XML
+		return $self->fromString($input);
+		
+	} else {
+		# hope it's a file name or handle
+		return $self->fromFile($input);
+	}
+	
+}
+
 
 sub toString
 {
@@ -178,16 +232,124 @@ sub toString
     my $retString = $self->{'_xmlDoc'}->toString($depth);
     
     $retString =~ s/<\/PSYCHOGENIC_ROOT_ELEMENT>//smi;
+    $retString =~ s/<PSYCHOGENIC_ROOT_ELEMENT([^>]*)?>\s*//smi;
     
-    if ($depth == $XML::Mini::NoWhiteSpaces)
-    {
-		$retString =~ s/<PSYCHOGENIC_ROOT_ELEMENT([^>]*)?>\s*/<?xml version="1.0"$1?>/smi;
-    } else {
-		$retString =~ s/<PSYCHOGENIC_ROOT_ELEMENT([^>]*)>\s*/<?xml version="1.0"$1?>\n /smi;
-    }
     
     return $retString;
 }
+
+sub fromSubStringBT {
+	my $self = shift;
+	my $parentElement = shift;
+   	my $XMLString = shift;
+	
+	if ($XML::Mini::Debug) 
+	{
+		XML::Mini->Log("Called fromSubStringBT() with parent '" . $parentElement->name() . "'\n");
+	}
+	
+	my @res = Text::Balanced::extract_tagged($XMLString);
+	
+	if ($#res == 5)
+	{
+		# We've extracted a balanced <tag>..</tag>
+	
+		my $extracted = $res[0]; # the entire <t>..</t>
+		my $remainder = $res[1]; # stuff after the <t>..</t>HERE  - 3
+		my $prefix = $res[3]; # the <t ...> itself - 1
+		my $contents = $res[4]; # the '..' between <t>..</t> - 2
+		my $suffix = $res[5]; # the </t>
+		
+		#XML::Mini->Log("Grabbed prefix '$prefix'...");
+		my $newElement;
+		
+		if ($prefix =~ m|<\s*([^\s>]+)\s*([^>]*)>|)
+		{
+			my $name = $1;
+			my $attribs = $2;
+			$newElement = $parentElement->createChild($name);
+	    		$self->_extractAttributesFromString($newElement, $attribs) if ($attribs);
+			
+			$self->fromSubStringBT($newElement, $contents) if ($contents =~ m|\S|);
+			
+			$self->fromSubStringBT($parentElement, $remainder) if ($remainder =~ m|\S|);
+		} else {
+			
+			XML::Mini->Log("XML::Mini::Document::fromSubStringBT extracted balanced text from invalid tag '$prefix' - ignoring");
+    		}
+	} else {
+		# not a <tag>...</tag>
+		#it's either a                             
+		if ($XMLString =~ m/^\s*(<\s*([^\s>]+)([^>]+)\/\s*>|	# <unary \/>
+					 <\?\s*([^\s>]+)\s*([^>]*)\?>|	# <? headers ?>
+					 <!--(.+?)-->|			# <!-- comments -->
+					 <!\[CDATA\s*\[(.*?)\]\]\s*>\s*| 	# CDATA 
+					 <!DOCTYPE\s*([^\[]*)\[(.*?)\]\s*>\s*|	# DOCTYPE
+					 <!ENTITY\s*([^"'>]+)\s*(["'])([^\11]+)\11\s*>\s*| # ENTITY
+					 ([^<]+))(.*)/xogsmi) # plain text
+		{
+			my $firstPart	 = $1;
+			my $unaryName 	 = $2;
+			my $unaryAttribs = $3;
+			my $headerName 	 = $4;
+			my $headerAttribs= $5;
+			my $comment 	 = $6;
+			my $cdata	 = $7;
+			my $doctype	 = $8;
+			my $doctypeCont  = $9;
+			my $entityName	 = $10;
+			my $entityCont	 = $12;
+			my $plainText	 = $13;
+			my $remainder 	 = $14;
+			
+			# There is some duplication here that should be merged with that in fromSubString()
+			if ($unaryName)
+			{
+				my $newElement = $parentElement->createChild($unaryName);
+				$self->_extractAttributesFromString($newElement, $unaryAttribs) if ($unaryAttribs);
+			} elsif ($headerName)
+			{
+				my $newElement = XML::Mini::Element::Header->new($headerName);
+				$self->_extractAttributesFromString($newElement, $headerAttribs) if ($headerAttribs);
+				$parentElement->appendChild($newElement);
+			} elsif (defined $comment) {
+				$parentElement->comment($comment);
+			} elsif (defined $cdata) {
+				my $newElement = XML::Mini::Element::CData->new($cdata);
+				$parentElement->appendChild($newElement);
+			} elsif (defined $doctypeCont) {
+				my $newElement = XML::Mini::Element::DocType->new($doctype);
+				$parentElement->appendChild($newElement);
+				$self->fromSubStringBT($newElement, $doctypeCont);
+			} elsif (defined $entityName) {
+				my $newElement = XML::Mini::Element::Entity->new($entityName, $entityCont);
+				$parentElement->appendChild($newElement);
+			} elsif (defined $plainText && $plainText =~ m|\S|sm)
+			{
+				$parentElement->createNode($plainText);
+			} else {
+				XML::Mini->Log("NO MATCH???") if ($XML::Mini::Debug);
+			}
+			
+			
+			if (defined $remainder && $remainder =~ m|\S|sm)
+			{
+				$self->fromSubStringBT($parentElement, $remainder);
+			}
+			
+		} else {
+			# No match here either...
+			XML::Mini->Log("No match in fromSubStringBT() for '$XMLString'") if ($XML::Mini::Debug);
+			
+		} # end if it matches one of our other tags or plain text
+		
+	} # end if Text::Balanced returned a match
+	
+	
+} # end fromSubStringBT()
+			
+	
+    
 
 sub fromSubString
 {
@@ -212,12 +374,19 @@ sub fromSubString
     # plain text
     #=~/<\s*([^\s>]+)([^>]+)?>(.*?)<\s*\/\\1\s*>\s*([^<]+)?(.*)
     
+    
+    if ($TextBalancedAvailable)
+    {
+    	return $self->fromSubStringBT($parentElement, $XMLString);
+    }
+    
     while ($XMLString =~/\s*<\s*([^\s>]+)([^>]+)?>(.*?)<\s*\/\1\s*>\s*([^<]+)?(.*)|
     \s*<!--(.+?)-->\s*|
     \s*<\s*([^\s>]+)([^>]+)\/\s*>\s*([^<>]+)?|
     \s*<!\[CDATA\s*\[(.*?)\]\]\s*>\s*|
     \s*<!DOCTYPE\s*([^\[]*)\[(.*?)\]\s*>\s*|
     \s*<!ENTITY\s*([^"'>]+)\s*(["'])([^\14]+)\14\s*>\s*|
+    \s*<\?\s*([^\s>]+)\s*([^>]*)\?>|
     ^([^<]+)(.*)/xogsmi)
 	   
 
@@ -228,7 +397,9 @@ sub fromSubString
 	my $cdata = $10;
 	my $doctypedef = $12;
 	my $entityname = $13;
-	my $plaintext = $16;
+	my $headername = $16;
+	my $headerAttribs  = $17;
+	my $plaintext = $18;
 	
 	if (defined $uname)
 	{
@@ -239,6 +410,12 @@ sub fromSubString
 	    {
 		$parentElement->createNode($ufinaltxt);
 	    }
+	} elsif (defined $headername)
+	{
+		my $newElement = XML::Mini::Element::Header->new($headername);
+		$self->_extractAttributesFromString($newElement, $headerAttribs) if ($headerAttribs);
+		$parentElement->appendChild($newElement);
+	
 	} elsif (defined $comment) {
 	    #my $newElement = XML::Mini::Element::Comment->new('!--');
 	    #$newElement->createNode($comment);
@@ -258,7 +435,7 @@ sub fromSubString
 	    
 	} elsif (defined $plaintext) {
 	    
-	    my $afterTxt = $17;
+	    my $afterTxt = $19;
 	    if ($plaintext !~ /^\s+$/)
 	    {
 		$parentElement->createNode($plaintext);
@@ -406,7 +583,7 @@ XML::Mini::Document - Perl implementation of the XML::Mini Document API.
 	my $xmlDoc = XML::Mini::Document->new();
 	
 	# init the doc from an XML string
-	$xmlDoc->fromString($XMLString);
+	$xmlDoc->parse($XMLString);
 	
 	# Fetch the ROOT element for the document
 	# (an instance of XML::Mini::Element)
@@ -519,6 +696,33 @@ inaccessible by getElementByPath() - Use XML::Mini::Element::getAllChildren() in
 
 Returns the XML::Mini::Element reference if found, NULL otherwise.
 
+
+=head2 parse SOURCE
+
+Initialise the XML::Mini::Document (and its root XML::Mini::Element) using the
+XML from file SOURCE.
+
+SOURCE may be a string containing your XML document.
+
+In addition to parsing strings, possible SOURCEs are:
+ 
+
+	# a file location string 
+	$miniXMLDoc->parse('/path/to/file.xml');
+	
+	# an open file handle
+	open(INFILE, '/path/to/file.xml');
+	$miniXMLDoc->parse(*INFILE);
+	
+	# an open FileHandle object
+	my $fhObj = FileHandle->new();
+	$fhObj->open('/path/to/file.xml');
+	$miniXML->parse($fhObj);
+	
+In all cases where SOURCE is a file or file handle, XML::Mini takes care of slurping the
+contents and closing the handle.
+
+
 =head2 fromString XMLSTRING
 
 Initialise the XML::Mini::Document (and it's root XML::Mini::Element) using the 
@@ -534,6 +738,8 @@ XML from file FILNAME.
 
 Returns the number of immediate children the root XML::Mini::Element now
 has.
+
+
 
 =head2 toString [DEPTH]
 
@@ -565,12 +771,30 @@ Utility function, call the root XML::Mini::Element's getValue()
 Debugging aid, dump returns a nicely formatted dump of the current structure of the
 XML::MiniDoc object.
 
+
+=head1 CAVEATS
+
+It is impossible to parse "cross-nested" tags using regular expressions (i.e. sequences of the form
+<a><b><a>...</a></b></a>).  However, if you have the Text::Balanced module installed (it is installed 
+by default with Perl 5.8), such sequences will be handled flawlessly.
+
+Even if you do not have the Text::Balanced module available, it is still possible to generate this type
+of XML.
+
 =head1 AUTHOR
+
+
+Copyright (C) 2002-2003 Patrick Deegan, Psychogenic Inc.
+
+Programs that use this code are bound to the terms and conditions of the GNU GPL (see the LICENSE file). 
+If you wish to include these modules in non-GPL code, you need prior written authorisation 
+from the authors.
+
 
 LICENSE
 
     XML::Mini::Document module, part of the XML::Mini XML parser/generator package.
-    Copyright (C) 2002 Patrick Deegan
+    Copyright (C) 2002-2003 Patrick Deegan
     All rights reserved
     
     This program is free software; you can redistribute it and/or modify
@@ -590,7 +814,7 @@ LICENSE
 
 Official XML::Mini site: http://minixml.psychogenic.com
 
-Contact page for author available at http://www.psychogenic.com/en/contact.shtml
+Contact page for author available at http://www.psychogenic.com/
 
 =head1 SEE ALSO
 

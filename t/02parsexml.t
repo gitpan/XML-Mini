@@ -5,7 +5,7 @@ $^W = 1; # play nice with old perl
 BEGIN { plan tests=> 46 }
 
 use FileHandle;
-use XML::Mini::Document;
+require XML::Mini::Document;
 use strict;
 
 my $sample = './t/sample/vocpboxes.xml';
@@ -16,7 +16,7 @@ my $numBoxes = 20;
 
 	my $numchildren = $miniXML->fromFile($sample);
 
-	ok($numchildren, 1);
+	ok($numchildren, 2);
 
 	my $vocpBoxList = $miniXML->getElementByPath('VOCPBoxConfig/boxList') || ok(0);
 	ok(1);

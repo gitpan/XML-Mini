@@ -25,6 +25,8 @@ my $expectedXML =
 	my $xmlRootNode = $miniXMLDoc->getRoot();
 
 	ok($xmlRootNode);
+	my $xmlHeader = $xmlRootNode->header('xml');
+	$xmlHeader->attribute('version', '1.0');
 
 	my $tag1 = $xmlRootNode->createChild('tag1', 'hola');
 	ok($tag1);
@@ -71,7 +73,7 @@ my $expectedXML =
 	my $removedChild = $xmlRootNode->removeChild($tag4);
 	my $newNumChildren = $xmlRootNode->numChildren();
 
-	ok($newNumChildren, 3);
+	ok($newNumChildren, 4);
 
 	my $prepended = $orphan->prependChild($removedChild);
 	ok($prepended);

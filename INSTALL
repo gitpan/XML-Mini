@@ -1,6 +1,16 @@
 #!/bin/sh
 
-#   XML::Mini - The usual procedure will function nicely :
+#   XML::Mini 
+#
+#    XML::Mini perl extension, XML parser/generator package.
+#    Copyright (C) 2002-2003 Patrick Deegan, Psychogenic INC
+#    All rights reserved
+#    http://minixml.psychogenic.com
+#    
+#    See the LICENSE file for details on terms/conditions of use.
+#    
+
+# Installation.  The usual procedure will function nicely :
 
 perl Makefile.PL
 make

@@ -11,7 +11,7 @@ use XML::Mini::Element::CData;
 
 use vars qw ( $VERSION @ISA );
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.24';
+$VERSION = '1.25';
 
 sub new
 {
@@ -153,6 +153,24 @@ sub comment
     
     return $newEl;
 }
+
+sub header 
+{
+    my $self = shift;
+    my $name = shift;
+    my $attribs = shift; # optional
+    
+    unless (defined $name)
+    {
+    	return XML::Mini->Error("XML::Mini::Element::header() must pass a NAME to create a new header");
+    }
+    
+    my $newElement = XML::Mini::Element::Header->new($name);
+    $self->appendChild($newElement);
+    
+    return $newElement;
+}
+
 
 sub docType
 {
@@ -790,6 +808,12 @@ XML::Mini::Element - Perl implementation of the XML::Mini Element API.
 	# (an instance of XML::Mini::Element)
 	my $xmlElement = $xmlDoc->getRoot();
 	
+	# Create an <?xml?> tag
+	my $xmlHeader = $xmlElement->header('xml');
+	
+	# add the version to get <?xml version="1.0"?>
+	$xmlHeader->attribute('version', '1.0');
+	
 	# Create a sub element
 	my $newChild = $xmlElement->createChild('mychild');
 	
@@ -828,7 +852,7 @@ The code above would output:
 
 =head1 DESCRIPTION
 
-Although the main handle to the xml document is the XML::MiniDoc object,
+Although the main handle to the xml document is the XML::Mini::Document object,
 much of the functionality and manipulation involves interaction with
 Element objects.
 
@@ -905,6 +929,28 @@ numeric contents.
 
 Note: ONLY numerical contents are included from the list of child XML::MiniNodes.
 
+=head2 header NAME
+
+The header() method allows you to add a new XML::Mini::Element::Header to this 
+element's list of children.
+
+Headers return a <? NAME ?> string for the element's toString() method.  Attributes
+may be set using attribute(), to create headers like
+<?xml-stylesheet href="doc.xsl" type="text/xsl"?>
+
+Valid XML documents must have at least an 'xml' header, like:
+<?xml version="1.0" ?>
+
+Here's how you could begin creating an XML document:
+
+ 
+
+	my $miniXMLDoc =  XML::Mini::Document->new();
+	my $xmlRootNode = $miniXMLDoc->getRoot();
+	my $xmlHeader = $xmlRootNode->header('xml');
+	$xmlHeader->attribute('version', '1.0');
+
+This method was added in version 1.25.
 
 =head2 comment CONTENTS
 
@@ -1132,6 +1178,15 @@ Note: You don't need to use this method normally - it is used
 internally when appending text() and such data.
 
 =head1 AUTHOR
+
+
+Copyright (C) 2002-2003 Patrick Deegan, Psychogenic Inc.
+
+Programs that use this code are bound to the terms and conditions of the GNU GPL (see the LICENSE file). 
+If you wish to include these modules in non-GPL code, you need prior written authorisation 
+from the authors.
+
+
 
 LICENSE
 

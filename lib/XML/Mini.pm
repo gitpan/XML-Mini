@@ -14,7 +14,7 @@ use vars qw (
 	     $VERSION
 	     );
 
-$VERSION = '1.24';
+$VERSION = '1.25';
 
 $AvoidLoops = 0;
 $AutoEscapeEntities = 1;
@@ -164,10 +164,17 @@ Logs MESSAGE and exits the program, calling exit()
 
 =head1 AUTHOR
 
+Copyright (C) 2002-2003 Patrick Deegan, Psychogenic Inc.
+
+Programs that use this code are bound to the terms and conditions of the GNU GPL (see the LICENSE file). 
+If you wish to include these modules in non-GPL code, you need prior written authorisation 
+from the authors.
+
+
 LICENSE
 
     XML::Mini module, part of the XML::Mini XML parser/generator package.
-    Copyright (C) 2002 Patrick Deegan
+    Copyright (C) 2002, 2003 Patrick Deegan
     All rights reserved
     
     This program is free software; you can redistribute it and/or modify
@@ -187,7 +194,7 @@ LICENSE
 
 Official XML::Mini site: http://minixml.psychogenic.com
 
-Contact page for author available at http://www.psychogenic.com/en/contact.shtml
+Contact page for author available at http://www.psychogenic.com/
 
 =head1 SEE ALSO
 

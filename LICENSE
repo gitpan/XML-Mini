@@ -1,5 +1,11 @@
 This license is included in, and applies to, the MiniXML package, including all
-elements of both the PHP version and the XML::Mini perl extension.
+elements of both the PHP version and the XML::Mini perl extension, which are 
+Copyright (C) 2002-2003 Patrick Deegan, Psychogenic Inc.
+All rights reserved.
+
+Programs that use this code are bound to these terms and conditions - if you wish
+to include these modules in non-GPL code, you need prior written authorisation from
+the authors.
 
 
                     GNU GENERAL PUBLIC LICENSE

@@ -79,8 +79,12 @@ SYNOPSIS
       # Parse existing XML string
       my $xmlDoc = XML::Mini::Document->new();
   
-      $xmlDoc->fromString($XMLString);
-  
+	  $xmlDoc->parse($XMLString);
+	  # or
+	  $xmlDoc->parse('/path/to/file.xml');
+	  # or
+	  $xmlDoc->parse(*INPUTFILEHANDLE);
+
       # Now we can fetch elements:
   
       my $part = $xmlDoc->getElementByPath('partsRateReply/part');
@@ -135,6 +139,11 @@ Class methods
     Logs MESSAGE and exits the program, calling exit()
 
 AUTHOR
+
+Programs that use this code are bound to the terms and conditions of the GNU GPL (see the LICENSE file). 
+If you wish to include these modules in non-GPL code, you need prior written authorisation 
+from the authors.
+
     LICENSE
 
         XML::Mini module, part of the XML::Mini XML parser/generator package.
@@ -158,7 +167,7 @@ AUTHOR
     Official XML::Mini site: http://minixml.psychogenic.com
 
     Contact page for author available at
-    http://www.psychogenic.com/en/contact.shtml
+    http://www.psychogenic.com/
 
 SEE ALSO
     XML::Mini::Document, XML::Mini::Element

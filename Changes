@@ -1,5 +1,16 @@
 Revision history for Perl extension XML::Mini
 
+XML-Mini-1.25, 2003.01.26
+-------------------------
+- Major changes to the parsing algorithm which, if Text::Balanced is available, allow "cross-nested" tags
+  (such as <a><b><a>..</a></b></a>) to be parsed successfully.
+- <? tags ?> are now represented as XML::Mini::Element::Header elements
+- Added the XML::Mini::Document::header() method to create the new XML::Mini::Element::Header elements 
+  which represent <? tags ?>.
+- Added the XML::Mini::Document::parse() method which accepts strings, filenames, open file handles and
+  opened FileHandle objects
+- Currently beta-testing an XML::Mini replacement parser for the RPC::XML package
+
 XML-Mini-1.24, 2002.12.16
 -------------------------
 - Included Nigel Wetters (rivalsdm.com) changes/bug fixes to XML::Mini 
