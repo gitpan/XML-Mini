@@ -1,0 +1,15 @@
+Mini.pm
+Makefile.PL
+test.pl
+Changes
+INSTALL
+MANIFEST
+Mini/Document.pm
+Mini/TreeComponent.pm
+Mini/Node.pm
+Mini/Element.pm
+Mini/Element/Comment.pm
+Mini/Element/Entity.pm
+Mini/Element/CData.pm
+Mini/Element/DocType.pm
+README
