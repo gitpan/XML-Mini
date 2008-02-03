@@ -27,3 +27,4 @@ t/sample/invalid.xml
 t/sample/vocpboxes.xml
 t/sample/voicexmlbbs.vxml
 t/sample/xnested.xml
+META.yml                                 Module meta-data (added by MakeMaker)
