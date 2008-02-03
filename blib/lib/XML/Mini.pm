@@ -15,7 +15,7 @@ use vars qw (
 	     $VERSION
 	     );
 
-$VERSION = '1.34';
+$VERSION = '1.3.4';
 
 $AvoidLoops = 0;
 $AutoEscapeEntities = 1;
