@@ -6,7 +6,7 @@ use Data::Dumper;
 use XML::Mini;
 
 use vars qw ( $VERSION );
-$VERSION = '1.24';
+$VERSION = '1.28';
 
 sub new
 {

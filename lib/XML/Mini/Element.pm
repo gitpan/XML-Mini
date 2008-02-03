@@ -11,7 +11,7 @@ use XML::Mini::Element::CData;
 
 use vars qw ( $VERSION @ISA );
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.28';
+$VERSION = '1.34';
 
 sub new
 {
@@ -767,23 +767,40 @@ sub toString
     }
     
     # Else, we do have kids - sub element or nodes
-    $retString .= ">\n";
+    
+    my $allChildrenAreNodes = 1;
+    
+    my $i=0;
+    while ($allChildrenAreNodes && $i < $self->{'_numChildren'})
+    {
+    	$allChildrenAreNodes = 0 unless ($self->isNode($self->{'_children'}->[$i]));
+    	$i++;
+    }
+    
+    
+    $retString .= ">";
+    $retString .= "\n" unless ($allChildrenAreNodes);
+   
     
     my $nextDepth = $depth + 1;
     
-    for(my $i=0; $i < $self->{'_numChildren'}; $i++)
+    for($i=0; $i < $self->{'_numChildren'}; $i++)
     {
 	my $newStr = $self->{'_children'}->[$i]->toString($nextDepth);
 	if (defined $newStr)
 	{
-	    if ( $newStr !~ m|\n$|)
+	    if ( ! ($allChildrenAreNodes  || $newStr =~ m|\n$|) )
 	    {
 		$newStr .= "\n";
 	    }
+	    
 	    $retString .= $newStr;
 	} # end if newStr returned
     } # end loop over all children
-    $retString .= "$spaces</$elementName>\n";
+    
+    $retString .= "$spaces" unless ($allChildrenAreNodes);
+    
+    $retString .= "</$elementName>\n";
     return $retString;
 }
 

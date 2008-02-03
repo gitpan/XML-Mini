@@ -164,6 +164,57 @@ sub fromString
     my $self = shift;
     my $string = shift;
     
+    
+    if ($XML::Mini::CheckXMLBeforeParsing)
+    {
+    	my $copy = $string;
+    
+    	$copy =~ s/<\s*\?\s*xml.*?\?>//smg;
+    	$copy =~ s/<!--.+?-->//smg;
+    	$copy =~ s/<\s*[^\s>]+[^>]*\/\s*>//smg; # get rid of <unary /> tags
+    
+    	# get rid of all pairs of tags...
+   	 my %counts;
+   	 while ($copy =~ m/<\s*([^\/\s>]+)[^>]*>/smg)
+    	{
+    		$counts{$1}->{'open'} = 0 unless (exists $counts{$1}->{'open'});
+		$counts{$1}->{'open'}++;
+    	}	
+    
+    	while ($copy =~ m/<\s*\/\s*([^\s>]+)(\s[^>]*)?>/smg)
+    	{
+    		$counts{$1}->{'close'} = 0 unless (exists $counts{$1}->{'close'});
+		$counts{$1}->{'close'}++;
+    	}
+    
+    	# anything left
+    	my @unmatched;
+   	while (my ($tag, $res) = each %counts)
+    	{
+    		unless ($res->{'open'} && $res->{'close'} 
+			&& $res->{'open'} == $res->{'close'} )
+		{
+			push @unmatched, $tag;
+		}
+    	}
+    
+    	if (scalar @unmatched)
+    	{
+		if ($XML::Mini::DieOnBadXML)
+		{
+    			XML::Mini->Error("Found unmatched tags in your XML... " . join(',', @unmatched));
+		} else {
+			
+    			XML::Mini->Log("Found unmatched tags in your XML... " . join(',', @unmatched));
+		}
+		
+		return 0;
+    	}
+	
+	# passed our basic check...
+   }
+    	
+    
     $self->fromSubString($self->{'_xmlDoc'}, $string);
     
     return $self->{'_xmlDoc'}->numChildren();

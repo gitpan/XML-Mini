@@ -7,7 +7,7 @@ use XML::Mini::TreeComponent;
 use vars qw ( $VERSION @ISA );
 
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.24';
+$VERSION = '1.26';
 
 sub new
 {
@@ -116,11 +116,11 @@ sub toString
 	
     }
     
-    my $spaces = $self->_spaceStr($depth);
+    #my $spaces = $self->_spaceStr($depth);
 
-    my $retStr = $spaces;
-    $retStr .= "$self->{'_contents'}";
-    $retStr =~ s/\n\s*/\n$spaces/smg;
+    #my $retStr; = $spaces;
+    my $retStr = $self->{'_contents'};
+    #$retStr =~ s/\n\s*/\n$spaces/smg;
 
     return $retStr;
 }

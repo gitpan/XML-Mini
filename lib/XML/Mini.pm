@@ -10,11 +10,12 @@ use vars qw (
 	     $Debug
 	     $IgnoreWhitespaces
 	     $NoWhiteSpaces
-
+	     $CheckXMLBeforeParsing
+	     $DieOnBadXML
 	     $VERSION
 	     );
 
-$VERSION = '1.28';
+$VERSION = '1.3.4';
 
 $AvoidLoops = 0;
 $AutoEscapeEntities = 1;
@@ -23,6 +24,8 @@ $IgnoreWhitespaces = 1;
 $CaseSensitive = 0;
 $AutoSetParent = 0;
 $NoWhiteSpaces = -999;
+$CheckXMLBeforeParsing = 1;
+$DieOnBadXML = 1;
 
 sub Log
 {
@@ -36,10 +39,11 @@ sub Error
 {
     my $class = shift;
     
-    print STDERR "XML::Mini Error MESSAGE:" ;
-    print STDERR join(" ", @_) . "\n";
+	my $errMsg =  "XML::Mini Error MESSAGE:" . join(" ", @_) . "\n";
+
+    print STDERR $errMsg;
     
-    exit(254);
+	die $errMsg;
 }
 
 sub escapeEntities

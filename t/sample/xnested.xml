@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
  <?xml-stylesheet href="doc.xsl" type="text/xsl"?>
  <!-- 
-  this test checks cross nested tags, ie <a><b><a>..</a></b></a>
+this test checks cross nested tags, ie <a><b><a>..</a></b></a>
   -->
  <methodResponse>
   <params>
@@ -10,28 +10,20 @@
      <array>
       <data>
        <value>
-        <i4>
-         12
-        </i4>
+        <i4>12</i4>
        </value>
        <value>
-        <string>
-         Egypt
-        </string>
+        <string>Egypt</string>
        </value>
        <value>
-        <boolean>
-         0
-        </boolean>
+        <boolean>0</boolean>
        </value>
        <value>
         <data>
          <value>
           <data>
            <value>
-            <i4>
-             -31
-            </i4>
+            <i4>-31</i4>
            </value>
           </data>
          </value>

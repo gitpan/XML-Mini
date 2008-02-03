@@ -1,5 +1,9 @@
 Revision history for Perl extension XML::Mini
 
+XML-Mini-1.34, 2008.02.03
+-------------------------
+- Added a preliminary check to XML::Mini::Document::fromString so we don't even try to parse XML that's clearly bad (uneven number of <tag>...</tag> because of mistake of bad <unary> (without closing /).
+
 XML-Mini-1.28, 2003.03.31
 -------------------------
 - New XML::Mini::Document methods, toHash() and fromHash(), allow for wickedly easy XML generation and manipulation.  

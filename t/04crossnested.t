@@ -2,7 +2,7 @@ use Test;
 use strict;
 $^W = 1; # play nice with old perl
 
-BEGIN { plan tests=> 2 }
+BEGIN { plan tests=> 3 }
 
 use FileHandle;
 require XML::Mini::Document;
@@ -19,6 +19,7 @@ if ($@)
 }
 	# Text::Balanced is unavailable
 	$XML::Mini::AutoEscapeEntities = 0;
+	ok($XML::Mini::AutoEscapeEntities, 0); # avoid warning
 	my $miniXML =  XML::Mini::Document->new();
 
 	my $numchildren = $miniXML->fromFile($sample);
@@ -34,6 +35,7 @@ if ($@)
 	$inputFileHandle->close();
 
 	my $xmlOut = $miniXML->toString();
+	
 
 	skip($textBalancedUnavail, $sampleFile, $xmlOut);
 
