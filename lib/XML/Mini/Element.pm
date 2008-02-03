@@ -11,7 +11,7 @@ use XML::Mini::Element::CData;
 
 use vars qw ( $VERSION @ISA );
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.34';
+$VERSION = '1.36';
 
 sub new
 {
