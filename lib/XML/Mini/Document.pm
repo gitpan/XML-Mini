@@ -16,17 +16,17 @@ use XML::Mini::Node;
 use vars qw ( 	$VERSION
 		$TextBalancedAvailable
 	 );
-	 
-eval "use Text::Balanced qw(extract_tagged)";
-if ($@)
+
+use Text::Balanced;
+$TextBalancedAvailable = 1;
+
+$VERSION = '1.38';
+
+
+if ($XML::Mini::IgnoreDeepRecursionWarnings)
 {
-	$TextBalancedAvailable = 0;
-} else {
-	$TextBalancedAvailable = 1;
+	XML::Mini->ignoreDeepRecursionWarning();
 }
-
-
-$VERSION = '1.36';
 
 sub new
 {
@@ -171,6 +171,10 @@ sub fromString
     
     	$copy =~ s/<\s*\?\s*xml.*?\?>//smg;
     	$copy =~ s/<!--.+?-->//smg;
+	
+	$copy =~s/<!\[CDATA[^>]*>//smg;
+	$copy =~ s/<!DOCTYPE[^>]*>//smg;
+	$copy =~ s/<!ENTITY[^>]*>//smg;
     	$copy =~ s/<\s*[^\s>]+[^>]*\/\s*>//smg; # get rid of <unary /> tags
     
     	# get rid of all pairs of tags...
@@ -489,7 +493,7 @@ sub fromSubStringBT {
 			'<\?\s*[^\s>]+\s*[^>]*\?>', # <? headers ?>
 			'<!--.+?-->',			# <!-- comments -->
 			'<!\[CDATA\s*\[.*?\]\]\s*>\s*', 	# CDATA 
-			'<!DOCTYPE\s*([^\[]*)\[(.*?)\]\s*>',	# DOCTYPE
+			'<!DOCTYPE\s*([^\[>]*)(\[.*?\])?\s*>',	# DOCTYPE
 			'<!ENTITY\s*[^>]+>'
 		];
 		
@@ -543,7 +547,7 @@ sub fromSubStringBT {
 					 <\?\s*([^\s>]+)\s*([^>]*)\?>|	# <? headers ?>
 					 <!--(.+?)-->|			# <!-- comments -->
 					 <!\[CDATA\s*\[(.*?)\]\]\s*>\s*| 	# CDATA 
-					 <!DOCTYPE\s*([^\[]*)\[(.*?)\]\s*>\s*|	# DOCTYPE
+					 <!DOCTYPE\s*([^\[>]*)(\[.*?\])?\s*>\s*|	# DOCTYPE
 					 <!ENTITY\s*([^"'>]+)\s*(["'])([^\11]+)\11\s*>\s*| # ENTITY
 					 ([^<]+))(.*)/xogsmi) # plain text
 		{
@@ -561,6 +565,8 @@ sub fromSubStringBT {
 			my $plainText	 = $13;
 			my $remainder 	 = $14;
 			
+			
+			
 			# There is some duplication here that should be merged with that in fromSubString()
 			if ($unaryName)
 			{
@@ -576,10 +582,16 @@ sub fromSubStringBT {
 			} elsif (defined $cdata) {
 				my $newElement = XML::Mini::Element::CData->new($cdata);
 				$parentElement->appendChild($newElement);
-			} elsif (defined $doctypeCont) {
+			} elsif ($doctype || defined $doctypeCont) {
 				my $newElement = XML::Mini::Element::DocType->new($doctype);
 				$parentElement->appendChild($newElement);
-				$self->fromSubStringBT($newElement, $doctypeCont);
+				if ($doctypeCont)
+				{
+					$doctypeCont =~ s/^\s*\[//smg;
+					$doctypeCont =~ s/\]\s*$//smg;
+					
+					$self->fromSubStringBT($newElement, $doctypeCont);
+				}
 			} elsif (defined $entityName) {
 				my $newElement = XML::Mini::Element::Entity->new($entityName, $entityCont);
 				$parentElement->appendChild($newElement);
@@ -643,7 +655,7 @@ sub fromSubString
     \s*<!--(.+?)-->\s*|
     \s*<\s*([^\s>]+)\s*([^>]*)\/\s*>\s*([^<>]+)?|
     \s*<!\[CDATA\s*\[(.*?)\]\]\s*>\s*|
-    \s*<!DOCTYPE\s*([^\[]*)\[(.*?)\]\s*>\s*|
+    \s*<!DOCTYPE\s*([^\[>]*)(\[.*?\])?\s*>\s*|
     \s*<!ENTITY\s*([^"'>]+)\s*(["'])([^\14]+)\14\s*>\s*|
     \s*<\?\s*([^\s>]+)\s*([^>]*)\?>|
     ^([^<]+)(.*)/xogsmi)
@@ -654,7 +666,17 @@ sub fromSubString
 	my $uname = $7;
 	my $comment = $6;
 	my $cdata = $10;
-	my $doctypedef = $12;
+	my $doctypedef = $11;
+	if ($12)
+	{
+		if ($doctypedef)
+		{
+			$doctypedef .= ' ' . $12;
+		} else {
+			$doctypedef = $12;
+		}
+	}
+	
 	my $entityname = $13;
 	my $headername = $16;
 	my $headerAttribs  = $17;
@@ -683,6 +705,7 @@ sub fromSubString
 	    my $newElement = XML::Mini::Element::CData->new($cdata);
 	    $parentElement->appendChild($newElement);
 	} elsif (defined $doctypedef) {
+	    
 	    my $newElement = XML::Mini::Element::DocType->new($11);
 	    $parentElement->appendChild($newElement);
 	    $self->fromSubString($newElement, $doctypedef);
@@ -812,13 +835,14 @@ sub _extractAttributesFromString
     
     return undef unless (defined $attrString);
     my $count = 0;
-    while ($attrString =~ /([^\s]+)\s*=\s*(['"])([^\2]+?)\2/g)
+    while ($attrString =~ /([^\s]+)\s*=\s*(['"])([^\2]*?)\2/g)
     {
 	my $attrname = $1;
 	my $attrval = $3;
-	
+
 	if (defined $attrname)
 	{
+	    $attrval = '' unless (defined $attrval && length($attrval));
 	    $element->attribute($attrname, $attrval, '');
 	    $count++;
 	}
@@ -1347,40 +1371,44 @@ by default with Perl 5.8), such sequences will be handled flawlessly.
 Even if you do not have the Text::Balanced module available, it is still possible to generate this type
 of XML - the problem only appears when parsing.
 
+
 =head1 AUTHOR
 
 
-Copyright (C) 2002-2003 Patrick Deegan, Psychogenic Inc.
+Copyright (C) 2002-2008 Patrick Deegan, Psychogenic Inc.
 
 Programs that use this code are bound to the terms and conditions of the GNU GPL (see the LICENSE file). 
 If you wish to include these modules in non-GPL code, you need prior written authorisation 
 from the authors.
 
 
-LICENSE
+This library is released under the terms of the GNU GPL version 3, making it available only for 
+free programs ("free" here being used in the sense of the GPL, see http://www.gnu.org for more details). 
+Anyone wishing to use this library within a proprietary or otherwise non-GPLed program MUST contact psychogenic.com to 
+acquire a distinct license for their application.  This approach encourages the use of free software 
+while allowing for proprietary solutions that support further development.
+
+
+=head2 LICENSE
 
     XML::Mini::Document module, part of the XML::Mini XML parser/generator package.
-    Copyright (C) 2002-2003 Patrick Deegan
+    Copyright (C) 2002-2008 Patrick Deegan
     All rights reserved
     
-    This program is free software; you can redistribute it and/or modify
+    XML::Mini is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
+    XML::Mini is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    along with XML::Mini.  If not, see <http://www.gnu.org/licenses/>.
 
 
-Official XML::Mini site: http://minixml.psychogenic.com
-
-Contact page for author available at http://www.psychogenic.com/
 
 =head1 SEE ALSO
 

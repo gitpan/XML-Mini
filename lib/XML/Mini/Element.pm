@@ -11,7 +11,7 @@ use XML::Mini::Element::CData;
 
 use vars qw ( $VERSION @ISA );
 push @ISA, qw ( XML::Mini::TreeComponent );
-$VERSION = '1.36';
+$VERSION = '1.38';
 
 sub new
 {
@@ -62,6 +62,9 @@ sub attribute
     if (defined $value)
     {
 	$self->{'_attributes'}->{$name} = $value;
+    } else {
+    	$self->{'_attributes'}->{$name} = ''
+		unless (defined $self->{'_attributes'}->{$name});
     }
     
     if (defined $self->{'_attributes'}->{$name})
@@ -571,10 +574,28 @@ sub removeChild {
 	my $self = shift;
 	my $child = shift;
 	
+	unless (defined $child)
+	{
+		XML::Mini->Log("Element::removeChild() called without an ELEMENT parameter.");
+		return undef;
+	}
 	
 	unless ($self->{'_numChildren'})
 	{
 		return XML::Mini->Error("Element::removeChild() called for element without any children.");
+	}
+	
+	my $childType = ref $child;
+	unless ($childType && $childType =~ /XML::Mini::/)
+	{
+		# name of the child...
+		# try to find it...
+		my $el = $self->getElement($child);
+		
+		return XML::Mini->Error("Element::removeChild() called with element _name_ $child, but could not find any such element")
+				unless ($el);
+		
+		$child = $el;
 	}
 	
 	my $foundChild;
@@ -1331,38 +1352,44 @@ internally when appending text() and such data.
 =head1 AUTHOR
 
 
-Copyright (C) 2002-2003 Patrick Deegan, Psychogenic Inc.
+Copyright (C) 2002-2008 Patrick Deegan, Psychogenic Inc.
 
 Programs that use this code are bound to the terms and conditions of the GNU GPL (see the LICENSE file). 
 If you wish to include these modules in non-GPL code, you need prior written authorisation 
 from the authors.
 
 
+This library is released under the terms of the GNU GPL version 3, making it available only for 
+free programs ("free" here being used in the sense of the GPL, see http://www.gnu.org for more details). 
+Anyone wishing to use this library within a proprietary or otherwise non-GPLed program MUST contact psychogenic.com to 
+acquire a distinct license for their application.  This approach encourages the use of free software 
+while allowing for proprietary solutions that support further development.
 
-LICENSE
+
+=head2 LICENSE
 
     XML::Mini::Element module, part of the XML::Mini XML parser/generator package.
-    Copyright (C) 2002 Patrick Deegan
+    Copyright (C) 2002-2008 Patrick Deegan
     All rights reserved
     
-    This program is free software; you can redistribute it and/or modify
+    XML::Mini is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
+    XML::Mini is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    along with XML::Mini.  If not, see <http://www.gnu.org/licenses/>.
 
 
 Official XML::Mini site: http://minixml.psychogenic.com
 
-Contact page for author available at http://www.psychogenic.com/en/contact.shtml
+Contact page for author available on http://www.psychogenic.com/
+
 
 =head1 SEE ALSO
 

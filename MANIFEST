@@ -23,6 +23,7 @@ t/06getelem.t
 t/07ToFromHash.t
 t/08voicexml.t
 t/09invalidxml.t
+t/10removechild.t
 t/sample/invalid.xml
 t/sample/vocpboxes.xml
 t/sample/voicexmlbbs.vxml

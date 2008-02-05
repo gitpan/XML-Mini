@@ -17,7 +17,7 @@ my $numberOfBoxes = 20;
 
 	my $numchildren = $miniXML->parse($sample);
 
-	ok($numchildren, 2);
+	ok($numchildren, 3);
 
 	my $XMLhash = $miniXML->toHash();
 

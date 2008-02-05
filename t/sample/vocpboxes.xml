@@ -1,14 +1,15 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="ISO-8859-1"?>
+ <!DOCTYPE element SYSTEM "myxml.dtd">
  <VOCPBoxConfig>
   <boxList>
    <box number="001">
     <message>root.rmd</message>
-    <testtag />
-    <testtag />
-    <testtag myattr="somevalue" />
-    <testtag />
-    <testtag myattr="someothervalue">There are lots of test tags here, it would seem...</testtag>
-    <testtag />
+    <testtag>
+     <testtag myattr="somevalue=" />
+     <testtag />
+     <testtag emptyattr="" />
+     <testtag myattr="someothervalue">There are lots of test tags here, it would seem...</testtag>
+    </testtag>
     <owner>root</owner>
     <branch>0=998,1=011,2=012</branch>
    </box>

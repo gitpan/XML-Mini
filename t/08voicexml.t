@@ -5,12 +5,6 @@ $^W = 1; # play nice with old perl
 BEGIN { plan tests=> 3 }
 
 
-# get rid of annoying deep recursion warnings...
-$SIG{__WARN__} = sub {
-			my $msg = shift;
-			print STDERR $msg if ($msg !~ /Deep recursion/);
-};
-
 use FileHandle;
 require XML::Mini::Document;
 use strict;

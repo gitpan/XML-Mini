@@ -17,7 +17,7 @@ my $numBoxes = 20;
 
 	my $numchildren = $miniXML->fromFile($sample);
 
-	ok($numchildren, 2);
+	ok($numchildren, 3);
 
 	my $vocpBoxList = $miniXML->getElementByPath('VOCPBoxConfig/boxList') || ok(0);
 	ok(1);
@@ -58,7 +58,7 @@ my $numBoxes = 20;
 
 	my $xmlOut = $miniXML->toString();
 
-	ok($sampleFile, $xmlOut);
+	ok($xmlOut, $sampleFile);
 
 }
 

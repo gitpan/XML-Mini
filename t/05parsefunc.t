@@ -19,7 +19,7 @@ my $numBoxes = 20;
 
 	my $numchildren = $miniXML->parse($sample);
 
-	ok($numchildren, 2);
+	ok($numchildren, 3);
 
 	$miniXML->init();
 	if (! open(INFILE, "<$sample"))
@@ -28,13 +28,13 @@ my $numBoxes = 20;
 	}
 
 	$numchildren = $miniXML->parse(*INFILE);
-	ok($numchildren, 2);
+	ok($numchildren, 3);
 
 	$miniXML->init();
 	my $fhObj = FileHandle->new();
 	$fhObj->open($sample);
 	$numchildren = $miniXML->parse($fhObj);
-	ok($numchildren, 2);
+	ok($numchildren, 3);
 
 
 	$miniXML->init();
@@ -43,7 +43,7 @@ my $numBoxes = 20;
 	my $contents = join('', $fhObj->getlines());
 	$fhObj->close();
 	$numchildren = $miniXML->parse($contents);
-	ok($numchildren, 2);
+	ok($numchildren, 3);
 
 }
 

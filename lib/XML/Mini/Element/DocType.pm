@@ -6,7 +6,7 @@ use XML::Mini;
 use XML::Mini::Element;
 use vars qw ( $VERSION @ISA );
 
-$VERSION = '1.24';
+$VERSION = '1.38';
 push @ISA, qw ( XML::Mini::Element );
 
 sub new
@@ -22,6 +22,7 @@ sub new
     $self->{'_avoidLoops'} = $XML::Mini::AvoidLoops;
     $self->{'_attr'} = $attr;
     $self->name('DOCTYPE');
+    
     return $self;
 }
 
@@ -38,13 +39,17 @@ sub toString
 	$spaces = $self->_spaceStr($depth);
     }
     
-    my $retString = "$spaces<!DOCTYPE " . $self->{'_attr'} . " [\n";
+    my $retString = "$spaces<!DOCTYPE " . $self->{'_attr'};
     
     if (! $self->{'_numChildren'})
     {
-	$retString .= "]>\n";
+    	
+	$retString .= ">\n";
 	return $retString;
     }
+    
+    $retString .= " [\n";
+    
     
     my $nextDepth = ($depth == $XML::Mini::NoWhiteSpaces) ? $XML::Mini::NoWhiteSpaces
 	: $depth + 1;
@@ -80,32 +85,50 @@ The XML::Mini::Element::DocType is used internally to represent <!DOCTYPE bla bl
 
 You shouldn't need to use it directly, see XML::Mini::Element's docType() method.
 
+
+
 =head1 AUTHOR
 
-LICENSE
 
-    XML::Mini::Element::DocType module, part of the XML::Mini XML parser/generator package.
-    Copyright (C) 2002 Patrick Deegan
+Copyright (C) 2002-2008 Patrick Deegan, Psychogenic Inc.
+
+Programs that use this code are bound to the terms and conditions of the GNU GPL (see the LICENSE file). 
+If you wish to include these modules in non-GPL code, you need prior written authorisation 
+from the authors.
+
+
+This library is released under the terms of the GNU GPL version 3, making it available only for 
+free programs ("free" here being used in the sense of the GPL, see http://www.gnu.org for more details). 
+Anyone wishing to use this library within a proprietary or otherwise non-GPLed program MUST contact psychogenic.com to 
+acquire a distinct license for their application.  This approach encourages the use of free software 
+while allowing for proprietary solutions that support further development.
+
+
+=head2 LICENSE
+
+    XML::Mini::Element module, part of the XML::Mini XML parser/generator package.
+    Copyright (C) 2002-2008 Patrick Deegan
     All rights reserved
     
-    This program is free software; you can redistribute it and/or modify
+    XML::Mini is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
+    XML::Mini is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    along with XML::Mini.  If not, see <http://www.gnu.org/licenses/>.
 
 
 Official XML::Mini site: http://minixml.psychogenic.com
 
-Contact page for author available at http://www.psychogenic.com/en/contact.shtml
+Contact page for author available on http://www.psychogenic.com/
+
+
 
 =head1 SEE ALSO
 

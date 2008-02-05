@@ -1,4 +1,9 @@
 Revision history for Perl extension XML::Mini
+XML-Mini-1.38, 2008.02.04
+- Fixed <!DOCTYPE ...> bug
+- Can now handle empty attributes="" 
+- Fix for annoying deep recursion warnings
+- <?xml ?> header putting version attribute first, as prefered by xmllint etc.
 
 XML-Mini-1.34, 2008.02.03
 -------------------------
